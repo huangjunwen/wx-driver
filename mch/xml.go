@@ -2,6 +2,7 @@ package mch
 
 import (
 	"encoding/xml"
+	"fmt"
 	"sort"
 )
 
@@ -17,6 +18,8 @@ import (
 type mchXML struct {
 	XMLName struct{}      `xml:"xml"`
 	Fields  []mchXMLField `xml:",any"`
+	// 自带一个 buf 给 Fields 使用，可减少一次 alloc
+	fieldsBuf [32]mchXMLField
 }
 
 type mchXMLField struct {
@@ -24,8 +27,13 @@ type mchXMLField struct {
 	Text    string `xml:",chardata"`
 }
 
-// ForeachField 迭代 fields
-func (x *mchXML) ForeachField(fn func(i int, fieldName, fieldValue string) error) error {
+// Reset 清空 mchXML
+func (x *mchXML) Reset() {
+	x.Fields = x.fieldsBuf[:0]
+}
+
+// EachField 迭代 fields
+func (x *mchXML) EachField(fn func(i int, fieldName, fieldValue string) error) error {
 	for idx, field := range x.Fields {
 		if err := fn(idx, field.XMLName.Local, field.Text); err != nil {
 			return err
@@ -36,18 +44,26 @@ func (x *mchXML) ForeachField(fn func(i int, fieldName, fieldValue string) error
 
 // AddField 添加新的字段
 func (x *mchXML) AddField(fieldName, fieldValue string) {
-	if fieldValue == "" {
-		return
-	}
 	x.Fields = append(x.Fields, mchXMLField{
 		XMLName: xml.Name{Local: fieldName},
 		Text:    fieldValue,
 	})
 }
 
-// SortFields 对所有字段按字段名进行字典序排序
-func (x *mchXML) SortFields() {
-	sort.Slice(x.Fields, func(i, j int) bool {
-		return x.Fields[i].XMLName.Local < x.Fields[j].XMLName.Local
+// SortUniqueFields 按字段名字典序排序并检查字段名唯一性，若不唯一则 panic
+func (x *mchXML) SortUniqueFields() {
+	// 排序
+	sort.Slice(x.Fields, func(a, b int) bool {
+		return x.Fields[a].XMLName.Local < x.Fields[b].XMLName.Local
 	})
+
+	// 检查唯一性
+	prevFieldName := ""
+	for _, field := range x.Fields {
+		fieldName := field.XMLName.Local
+		if fieldName == prevFieldName {
+			panic(fmt.Errorf("Duplicate mch xml field name %+q", prevFieldName))
+		}
+		prevFieldName = fieldName
+	}
 }
