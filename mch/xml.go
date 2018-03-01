@@ -2,11 +2,10 @@ package mch
 
 import (
 	"encoding/xml"
-	"fmt"
 	"sort"
 )
 
-// mchXML 代表微信支付接口中的 xml 数据，为一层的 xml，根节点为 <xml>:
+// mchXML 代表微信支付接口中的 xml 数据，为一层的 xml
 //
 // 	 <xml>
 //     <field1>value1</field1>
@@ -14,22 +13,15 @@ import (
 //     ...
 //   </xml>
 //
-// 字段名应该唯一
 type mchXML struct {
 	XMLName struct{}      `xml:"xml"`
 	Fields  []mchXMLField `xml:",any"`
-	// 自带一个 buf 给 Fields 使用，可减少一次 alloc
-	fieldsBuf [32]mchXMLField
+	sorted  bool
 }
 
 type mchXMLField struct {
 	XMLName xml.Name
 	Text    string `xml:",chardata"`
-}
-
-// Reset 清空 mchXML
-func (x *mchXML) Reset() {
-	x.Fields = x.fieldsBuf[:0]
 }
 
 // EachField 迭代 fields
@@ -48,22 +40,31 @@ func (x *mchXML) AddField(fieldName, fieldValue string) {
 		XMLName: xml.Name{Local: fieldName},
 		Text:    fieldValue,
 	})
+	x.sorted = false
 }
 
-// SortUniqueFields 按字段名字典序排序并检查字段名唯一性，若不唯一则 panic
-func (x *mchXML) SortUniqueFields() {
-	// 排序
+// SortFields 按字段名字典序排序
+func (x *mchXML) SortFields() {
+	if x.sorted {
+		return
+	}
 	sort.Slice(x.Fields, func(a, b int) bool {
 		return x.Fields[a].XMLName.Local < x.Fields[b].XMLName.Local
 	})
+	x.sorted = true
+}
 
-	// 检查唯一性
+// CheckFieldsUniqueness 检查字段名的唯一性，若字段皆唯一，返回空串，否则返回第一个重复的字段；
+// 该方法会调用 SortFields
+func (x *mchXML) CheckFieldsUniqueness() (dupFieldName string) {
+	x.SortFields()
 	prevFieldName := ""
 	for _, field := range x.Fields {
 		fieldName := field.XMLName.Local
 		if fieldName == prevFieldName {
-			panic(fmt.Errorf("Duplicate mch xml field name %+q", prevFieldName))
+			return fieldName
 		}
 		prevFieldName = fieldName
 	}
+	return ""
 }

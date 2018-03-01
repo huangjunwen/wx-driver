@@ -17,7 +17,15 @@ import (
 // signMchXML 对 mchXML 签名；返回 actual 和 supplied 两个签名：
 // actual 是使用微信支付签名算法计算出来的签名
 // supplied 则是从 mchXML 里直接提取的 sign 字段（若有），否则为空
-func signMchXML(x *mchXML, signType SignType, key string) (actual, supplied string) {
+// 若字段非唯一返回错误，这是因为，假如有这样的 xml：
+//
+//   <xml>
+//     <a>x</a>
+//     <a>y</a>
+//   </xml>
+//
+// 则无法确认是使用 'a=x&a=y' 还是 'a=y&a=x' 进行签名，两者都是合法的排序
+func signMchXML(x *mchXML, signType SignType, key string) (actual, supplied string, err error) {
 	// 选择 hash
 	var h hash.Hash
 	switch signType {
@@ -27,8 +35,15 @@ func signMchXML(x *mchXML, signType SignType, key string) (actual, supplied stri
 		h = md5.New()
 	}
 
-	// 字典序排序并验证唯一性
-	x.SortUniqueFields()
+	// 字典序排序
+	x.SortFields()
+
+	// 检查唯一性
+	dupFieldName := x.CheckFieldsUniqueness()
+	if dupFieldName != "" {
+		err = fmt.Errorf("Can't sign since duplicate field %+q", dupFieldName)
+		return
+	}
 
 	// 开始签名
 	x.EachField(func(i int, fieldName, fieldValue string) error {
@@ -58,6 +73,17 @@ func signMchXML(x *mchXML, signType SignType, key string) (actual, supplied stri
 	return
 }
 
+// postMchXML 调用 mch xml 接口，大致过程如下：
+//   - 添加公共字段
+//     - appid
+//     - mch_id
+//     - sign_type
+//     - nonce_str
+//   - 签名并添加 sign 字段
+//   - 调用 api，等待结果或错误
+//   - 验证通讯结果
+//   - 验证签名
+// 所以若返回 err 为 nil，表明上述所有过程均无出错，但业务上的结果需要调用者检查 output 各字段方可知道
 func postMchXML(ctx context.Context, config Configuration, url string, input, output *mchXML, opts Options) error {
 	// 签名方式默认为 MD5
 	signType := opts.SignType
@@ -83,11 +109,13 @@ func postMchXML(ctx context.Context, config Configuration, url string, input, ou
 	input.AddField("sign_type", signType.String())
 	input.AddField("nonce_str", wxdriver.NonceStr(16)) // 32 位以内
 
-	// 计算签名，NOTE：同时检查字段唯一性
-	actualSign, suppliedSign := signMchXML(input, signType, config.WechatPayKey())
+	// 计算签名，同时验证字段唯一性
+	actualSign, suppliedSign, err := signMchXML(input, signType, config.WechatPayKey())
+	if err != nil {
+		return err
+	}
 	if suppliedSign != "" {
-		// 输入不应该有 <sign>
-		panic(fmt.Errorf("Request should not have <sign> but got one %+q", suppliedSign))
+		return fmt.Errorf("Request should not have <sign> but got one %+q", suppliedSign)
 	}
 	input.AddField("sign", actualSign)
 
@@ -113,13 +141,13 @@ func postMchXML(ctx context.Context, config Configuration, url string, input, ou
 
 	// 解码
 	decoder := xml.NewDecoder(resp.Body)
-	output.Reset()
 	if err := decoder.Decode(output); err != nil {
 		return err
 	}
 
-	// 获取 return_code 和 return_msg
-	returnCode, returnMsg := "", ""
+	// 提取 return code 和 return msg
+	returnCode := ""
+	returnMsg := ""
 	output.EachField(func(_ int, name, val string) error {
 		switch name {
 		case "return_code":
@@ -129,13 +157,17 @@ func postMchXML(ctx context.Context, config Configuration, url string, input, ou
 		}
 		return nil
 	})
+
+	// return_code 不成功时没有签名，所以直接返回其错误信息
 	if returnCode != "SUCCESS" {
-		// return_code 不成功时没有签名，所以直接返回其错误信息
 		return fmt.Errorf("Response return %+q with msg: %+q", returnCode, returnMsg)
 	}
 
-	// 验证签名，NOTE：同时验证字段唯一性
-	actualSign, suppliedSign = signMchXML(output, signType, config.WechatPayKey())
+	// 验证签名，同时验证字段唯一性
+	actualSign, suppliedSign, err = signMchXML(output, signType, config.WechatPayKey())
+	if err != nil {
+		return err
+	}
 	if actualSign != suppliedSign {
 		return fmt.Errorf("Response has actual sign %+q... but got %+q", actualSign[:8], suppliedSign)
 	}
