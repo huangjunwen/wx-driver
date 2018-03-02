@@ -49,13 +49,13 @@ func UseSignType(signType SignType) Option {
 }
 
 // NewOptions 组装 Options
-func NewOptions(options ...Option) (Options, error) {
+func NewOptions(options ...Option) (*Options, error) {
 	// 以默认选项为蓝本
 	ret := DefaultOptions
 	for _, option := range options {
 		if err := option(&ret); err != nil {
-			return Options{}, err
+			return nil, err
 		}
 	}
-	return ret, nil
+	return &ret, nil
 }
