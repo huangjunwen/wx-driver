@@ -14,8 +14,8 @@ import (
 	"strings"
 )
 
-// mchResponse 为微信支付接口响应的公共部分
-type mchResponse struct {
+// MchResponse 为微信支付接口响应的公共部分
+type MchResponse struct {
 	// 业务结果字段
 	ResultCode string
 	ErrCode    string
@@ -30,19 +30,19 @@ type mchResponse struct {
 }
 
 // IsSuccess 返回该响应的业务结果是否成功，若返回 false，可调用 Error 方法获得具体错误
-func (resp *mchResponse) IsSuccess() bool {
+func (resp *MchResponse) IsSuccess() bool {
 	return resp.ResultCode == "SUCCESS"
 }
 
 // Error 当业务结果不成功的错误原因，若业务结果成功返回 nil
-func (resp *mchResponse) Error() error {
+func (resp *MchResponse) Error() error {
 	if resp.IsSuccess() {
 		return nil
 	}
 	return fmt.Errorf("Mch result errcode=%+q errmsg=%+q", resp.ErrCode, resp.ErrCodeDes)
 }
 
-func (resp *mchResponse) mchXMLIter(i int, fieldName, fieldValue string) error {
+func (resp *MchResponse) mchXMLIter(i int, fieldName, fieldValue string) error {
 	switch fieldName {
 	case "result_code":
 		resp.ResultCode = fieldValue

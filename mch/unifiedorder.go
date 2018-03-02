@@ -47,7 +47,7 @@ type UnifiedOrderRequest struct {
 
 // UnifiedOrderResponse 为统一下单接口响应
 type UnifiedOrderResponse struct {
-	mchResponse
+	MchResponse
 	TradeType        // trade_type String(16) 交易类型
 	PrepayID  string // prepay_id String(64) 预支付交易会话标识
 	CodeUrl   string // code_url String(64) 二维码链接 trade_type 为 NATIVE 时有返回
@@ -137,7 +137,7 @@ func UnifiedOrder(ctx context.Context, config Configuration, req *UnifiedOrderRe
 	}
 
 	resp := UnifiedOrderResponse{}
-	err = respXML.EachField(resp.mchResponse.mchXMLIter, func(_ int, fieldName, fieldValue string) error {
+	err = respXML.EachField(resp.MchResponse.mchXMLIter, func(_ int, fieldName, fieldValue string) error {
 		switch fieldName {
 		case "trade_type":
 			resp.TradeType = ParseTradeType(fieldValue)
