@@ -11,3 +11,31 @@ type Configuration interface {
 	// WechatPayKey 返回微信支付密钥
 	WechatPayKey() string
 }
+
+// configuration 是默认 Configuration 实现
+type configuration struct {
+	appID    string
+	payMchID string
+	payKey   string
+}
+
+// NewConfiguration 构造一个 Configuration
+func NewConfiguration(appID, payMchID, payKey string) Configuration {
+	return &configuration{
+		appID:    appID,
+		payMchID: payMchID,
+		payKey:   payKey,
+	}
+}
+
+func (c *configuration) WechatAppID() string {
+	return c.appID
+}
+
+func (c *configuration) WechatPayMchID() string {
+	return c.payMchID
+}
+
+func (c *configuration) WechatPayKey() string {
+	return c.payKey
+}
