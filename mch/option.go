@@ -14,9 +14,6 @@ type Options struct {
 	// HTTPClient 为调用微信支付接口时使用的 http 客户端，若空则使用默认的；
 	wxdriver.HTTPClient
 
-	// APIVersion 指定接口版本号，某些接口有多个版本，默认为 APIVersionDefault
-	APIVersion
-
 	// SignType 指定签名类型，默认为 MD5
 	SignType
 }
@@ -28,14 +25,6 @@ type Option func(*Options) error
 func UseClient(client wxdriver.HTTPClient) Option {
 	return func(opts *Options) error {
 		opts.HTTPClient = client
-		return nil
-	}
-}
-
-// UseAPIVersion 设置接口版本号，NOTE：不是所有接口都有版本
-func UseAPIVersion(ver APIVersion) Option {
-	return func(opts *Options) error {
-		opts.APIVersion = ver
 		return nil
 	}
 }

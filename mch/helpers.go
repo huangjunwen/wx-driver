@@ -14,56 +14,6 @@ import (
 	"strings"
 )
 
-// MchResponse 为微信支付接口响应的公共部分
-type MchResponse struct {
-	// 业务结果字段
-	ResultCode string
-	ErrCode    string
-	ErrCodeDes string
-
-	// 备查字段
-	AppID      string
-	MchID      string
-	DeviceInfo string
-	NonceStr   string
-	Sign       string
-}
-
-// IsSuccess 返回该响应的业务结果是否成功，若返回 false，可调用 Error 方法获得具体错误
-func (resp *MchResponse) IsSuccess() bool {
-	return resp.ResultCode == "SUCCESS"
-}
-
-// Error 当业务结果不成功的错误原因，若业务结果成功返回 nil
-func (resp *MchResponse) Error() error {
-	if resp.IsSuccess() {
-		return nil
-	}
-	return fmt.Errorf("Mch result errcode=%+q errmsg=%+q", resp.ErrCode, resp.ErrCodeDes)
-}
-
-func (resp *MchResponse) mchXMLIter(i int, fieldName, fieldValue string) error {
-	switch fieldName {
-	case "result_code":
-		resp.ResultCode = fieldValue
-	case "err_code":
-		resp.ErrCode = fieldValue
-	case "err_code_des":
-		resp.ErrCodeDes = fieldValue
-	case "appid":
-		resp.AppID = fieldValue
-	case "mch_id":
-		resp.MchID = fieldValue
-	case "device_info":
-		resp.DeviceInfo = fieldValue
-	case "nonce_str":
-		resp.NonceStr = fieldValue
-	case "sign":
-		resp.Sign = fieldValue
-	}
-	return nil
-}
-
 // signMchXML 对 mchXML 签名；返回 actual 和 supplied 两个签名：
 // actual 是使用微信支付签名算法计算出来的签名
 // supplied 则是从 mchXML 里直接提取的 sign 字段（若有），否则为空
@@ -135,12 +85,6 @@ func signMchXML(x *mchXML, signType SignType, key string) (actual, supplied stri
 //   - 验证签名
 // 所以若返回 err 为 nil，表明上述所有过程均无出错，但业务上的结果需要调用者检查 output 各字段方可知道
 func postMchXML(ctx context.Context, config Configuration, url string, reqXML, respXML *mchXML, opts *Options) error {
-	// 签名方式默认为 MD5
-	signType := opts.SignType
-	if !signType.IsValid() {
-		signType = SignTypeMD5
-	}
-
 	// http client 依次选择：opts.HTTPClient > DefaultOptions.HTTPClient > wxdriver.DefaultHTTPClient > http.DefaultClient
 	client := opts.HTTPClient
 	if client == nil {
@@ -151,6 +95,12 @@ func postMchXML(ctx context.Context, config Configuration, url string, reqXML, r
 	}
 	if client == nil {
 		client = http.DefaultClient
+	}
+
+	// 签名方式默认为 MD5
+	signType := opts.SignType
+	if !signType.IsValid() {
+		signType = SignTypeMD5
 	}
 
 	// 添加一些公共字段
@@ -195,15 +145,21 @@ func postMchXML(ctx context.Context, config Configuration, url string, reqXML, r
 		return err
 	}
 
-	// 提取 return code 和 return msg
+	// 提取 return_code/return_msg/appid/mch_id
 	returnCode := ""
 	returnMsg := ""
+	appID := ""
+	mchID := ""
 	respXML.EachField(func(_ int, name, val string) error {
 		switch name {
 		case "return_code":
 			returnCode = val
 		case "return_msg":
 			returnMsg = val
+		case "appid":
+			appID = val
+		case "mch_id":
+			mchID = val
 		}
 		return nil
 	})
@@ -220,6 +176,14 @@ func postMchXML(ctx context.Context, config Configuration, url string, reqXML, r
 	}
 	if actualSign != suppliedSign {
 		return fmt.Errorf("Response has actual sign %+q but got %+q", actualSign, suppliedSign)
+	}
+
+	// 验证 appID 和 mchID
+	if appID != "" && appID != config.WechatAppID() {
+		return fmt.Errorf("Response appID expect %+q but got %+q", config.WechatAppID(), appID)
+	}
+	if mchID != "" && mchID != config.WechatPayMchID() {
+		return fmt.Errorf("Response mchID expect %+q but got %+q", config.WechatPayMchID(), mchID)
 	}
 
 	// 全部通过
