@@ -47,3 +47,14 @@ func UseSignType(signType SignType) Option {
 		return nil
 	}
 }
+
+func newOptions(opts []Option) (Options, error) {
+	// 以默认选项为蓝本
+	ret := DefaultOptions
+	for _, opt := range opts {
+		if err := opt(&ret); err != nil {
+			return Options{}, err
+		}
+	}
+	return ret, nil
+}

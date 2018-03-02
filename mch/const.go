@@ -12,6 +12,10 @@ type TradeState struct{ v string }
 // SignType 代表签名类型
 type SignType struct{ v string }
 
+const (
+	datetimeLayout = "20060102150405"
+)
+
 var (
 	APIVersionDefault = APIVersion{""}
 	APIVersion1       = APIVersion{"1.0"}

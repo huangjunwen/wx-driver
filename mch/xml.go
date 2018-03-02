@@ -25,10 +25,12 @@ type mchXMLField struct {
 }
 
 // EachField 迭代 fields
-func (x *mchXML) EachField(fn func(i int, fieldName, fieldValue string) error) error {
+func (x *mchXML) EachField(fns ...func(i int, fieldName, fieldValue string) error) error {
 	for idx, field := range x.Fields {
-		if err := fn(idx, field.XMLName.Local, field.Text); err != nil {
-			return err
+		for _, fn := range fns {
+			if err := fn(idx, field.XMLName.Local, field.Text); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
