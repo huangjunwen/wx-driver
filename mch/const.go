@@ -16,6 +16,15 @@ const (
 	datetimeLayout = "20060102150405"
 )
 
+const (
+	// URLBaseDefault 默认接入点
+	URLBaseDefault = "https://api.mch.weixin.qq.com"
+	// URLBaseHK 建议东南亚接入点
+	URLBaseHK = "https://apihk.mch.weixin.qq.com"
+	// URLBaseUS 建议其它地区接入点
+	URLBaseUS = "https://apius.mch.weixin.qq.com"
+)
+
 var (
 	APIVersionDefault = APIVersion{""}
 	APIVersion1       = APIVersion{"1.0"}

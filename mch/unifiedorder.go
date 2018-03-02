@@ -138,7 +138,7 @@ func UnifiedOrder(ctx context.Context, config Configuration, req *UnifiedOrderRe
 	}
 
 	respXML := mchXML{}
-	err = postMchXML(ctx, config, "https://api.mch.weixin.qq.com/pay/unifiedorder", &reqXML, &respXML, opts)
+	err = postMchXML(ctx, config, "/pay/unifiedorder", &reqXML, &respXML, opts)
 	if err != nil {
 		return nil, err
 	}

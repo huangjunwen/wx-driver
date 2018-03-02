@@ -2,6 +2,7 @@ package mch
 
 import (
 	"github.com/huangjunwen/wxdriver"
+	"net/url"
 )
 
 var (
@@ -12,10 +13,13 @@ var (
 // Options 包含调用微信支付接口时的选项，NOTE: 某些选项未必对所有接口都有意义
 type Options struct {
 	// HTTPClient 为调用微信支付接口时使用的 http 客户端，若空则使用默认的；
-	wxdriver.HTTPClient
+	HTTPClient wxdriver.HTTPClient
 
-	// SignType 指定签名类型，默认为 MD5
-	SignType
+	// URLBase 是接口 scheme + host，如空则使用默认 "https://api.mch.weixin.qq.com"
+	URLBase string
+
+	// SignType 指定签名类型，如空则使用默认 MD5
+	SignType SignType
 }
 
 // Option 代表调用微信支付接口时的单个选项
@@ -25,6 +29,22 @@ type Option func(*Options) error
 func UseClient(client wxdriver.HTTPClient) Option {
 	return func(opts *Options) error {
 		opts.HTTPClient = client
+		return nil
+	}
+}
+
+// UseURLBase 设置 URLBase，默认为 "https://api.mch.weixin.qq.com"
+func UseURLBase(urlBase string) Option {
+	return func(opts *Options) error {
+		u, err := url.Parse(urlBase)
+		if err != nil {
+			return err
+		}
+		// 只取 scheme 和 host 部分
+		opts.URLBase = (&url.URL{
+			Scheme: u.Scheme,
+			Host:   u.Host,
+		}).String()
 		return nil
 	}
 }

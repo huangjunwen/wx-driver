@@ -84,7 +84,7 @@ func signMchXML(x *mchXML, signType SignType, key string) (actual, supplied stri
 //   - 验证通讯结果
 //   - 验证签名
 // 所以若返回 err 为 nil，表明上述所有过程均无出错，但业务上的结果需要调用者检查 output 各字段方可知道
-func postMchXML(ctx context.Context, config Configuration, url string, reqXML, respXML *mchXML, opts *Options) error {
+func postMchXML(ctx context.Context, config Configuration, path string, reqXML, respXML *mchXML, opts *Options) error {
 	// http client 依次选择：opts.HTTPClient > DefaultOptions.HTTPClient > wxdriver.DefaultHTTPClient > http.DefaultClient
 	client := opts.HTTPClient
 	if client == nil {
@@ -95,6 +95,14 @@ func postMchXML(ctx context.Context, config Configuration, url string, reqXML, r
 	}
 	if client == nil {
 		client = http.DefaultClient
+	}
+
+	urlBase := opts.URLBase
+	if urlBase == "" {
+		urlBase = DefaultOptions.URLBase
+	}
+	if urlBase == "" {
+		urlBase = URLBaseDefault
 	}
 
 	// 签名方式默认为 MD5
@@ -127,7 +135,7 @@ func postMchXML(ctx context.Context, config Configuration, url string, reqXML, r
 	}
 
 	// 构造请求
-	req, err := http.NewRequest("POST", url, buf)
+	req, err := http.NewRequest("POST", urlBase+path, buf)
 	if err != nil {
 		return err
 	}
