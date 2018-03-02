@@ -102,13 +102,15 @@ func UnifiedOrder(ctx context.Context, config Configuration, req *UnifiedOrderRe
 
 	if req.TradeType == TradeTypeJSAPI && req.OpenID == "" {
 		return nil, ErrUnifiedOrderMissingOpenID
-	} else {
+	}
+	if req.OpenID != "" {
 		reqXML.AddField("openid", req.OpenID)
 	}
 
 	if req.TradeType == TradeTypeNATIVE && req.ProductID == "" {
 		return nil, ErrUnifiedOrderMissingProductID
-	} else {
+	}
+	if req.ProductID != "" {
 		reqXML.AddField("product_id", req.ProductID)
 	}
 
