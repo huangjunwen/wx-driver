@@ -22,12 +22,12 @@ var (
 // UnifiedOrderRequest 为统一下单接口请求
 type UnifiedOrderRequest struct {
 	// ----- 必填字段 -----
-	OutTradeNo     string // out_trade_no String(32) 商户系统内部订单号 同一个商户号下唯一
-	TotalFee       uint   // total_fee Int 标价金额 单位为分
-	Body           string // body String(128) 商品描述 <商场名>-<商品名>
-	SpbillCreateIp string // spbill_create_ip String(16) 终端IP
-	NotifyUrl      string // notify_url String(256) 通知地址
-	TradeType             // trade_type String(16) 交易类型
+	OutTradeNo     string    // out_trade_no String(32) 商户系统内部订单号 同一个商户号下唯一
+	TotalFee       uint      // total_fee Int 标价金额 单位为分
+	Body           string    // body String(128) 商品描述 <商场名>-<商品名>
+	SpbillCreateIp string    // spbill_create_ip String(16) 终端IP
+	NotifyUrl      string    // notify_url String(256) 通知地址
+	TradeType      TradeType // trade_type String(16) 交易类型
 
 	// ----- 特定条件必填字段 -----
 	OpenID    string // openid String(128) 用户标识 trade_type 为 JSAPI 时必填
@@ -48,10 +48,10 @@ type UnifiedOrderRequest struct {
 // UnifiedOrderResponse 为统一下单接口响应
 type UnifiedOrderResponse struct {
 	MchResponse
-	TradeType        // trade_type String(16) 交易类型
-	PrepayID  string // prepay_id String(64) 预支付交易会话标识
-	CodeUrl   string // code_url String(64) 二维码链接 trade_type 为 NATIVE 时有返回
-	MWebUrl   string // mweb_url String(64) 支付跳转链接 trade_type 为 MWEB 时有返回 可通过访问该url来拉起微信客户端
+	TradeType TradeType // trade_type String(16) 交易类型
+	PrepayID  string    // prepay_id String(64) 预支付交易会话标识
+	CodeUrl   string    // code_url String(64) 二维码链接 trade_type 为 NATIVE 时有返回
+	MWebUrl   string    // mweb_url String(64) 支付跳转链接 trade_type 为 MWEB 时有返回 可通过访问该url来拉起微信客户端
 }
 
 func UnifiedOrder(ctx context.Context, config Configuration, req *UnifiedOrderRequest, options ...Option) (*UnifiedOrderResponse, error) {
