@@ -134,12 +134,7 @@ func signMchXML(x *mchXML, signType SignType, key string) (actual, supplied stri
 //   - 验证通讯结果
 //   - 验证签名
 // 所以若返回 err 为 nil，表明上述所有过程均无出错，但业务上的结果需要调用者检查 output 各字段方可知道
-func postMchXML(ctx context.Context, config Configuration, url string, reqXML, respXML *mchXML, options []Option) error {
-	opts, err := newOptions(options)
-	if err != nil {
-		return err
-	}
-
+func postMchXML(ctx context.Context, config Configuration, url string, reqXML, respXML *mchXML, opts Options) error {
 	// 签名方式默认为 MD5
 	signType := opts.SignType
 	if !signType.IsValid() {

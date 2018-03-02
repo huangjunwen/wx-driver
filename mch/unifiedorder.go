@@ -55,8 +55,12 @@ type UnifiedOrderResponse struct {
 }
 
 func UnifiedOrder(ctx context.Context, config Configuration, req *UnifiedOrderRequest, options ...Option) (*UnifiedOrderResponse, error) {
-	reqXML := mchXML{}
+	opts, err := NewOptions(options...)
+	if err != nil {
+		return nil, err
+	}
 
+	reqXML := mchXML{}
 	if req.OutTradeNo == "" {
 		return nil, ErrUnifiedOrderMissingOutTradeNo
 	} else {
@@ -131,7 +135,7 @@ func UnifiedOrder(ctx context.Context, config Configuration, req *UnifiedOrderRe
 	}
 
 	respXML := mchXML{}
-	err := postMchXML(ctx, config, "https://api.mch.weixin.qq.com/pay/unifiedorder", &reqXML, &respXML, options)
+	err = postMchXML(ctx, config, "https://api.mch.weixin.qq.com/pay/unifiedorder", &reqXML, &respXML, opts)
 	if err != nil {
 		return nil, err
 	}
