@@ -54,6 +54,7 @@ type UnifiedOrderResponse struct {
 	MWebUrl   string    // mweb_url String(64) 支付跳转链接 trade_type 为 MWEB 时有返回 可通过访问该url来拉起微信客户端
 }
 
+// UnifiedOrder 统一下单
 func UnifiedOrder(ctx context.Context, config Configuration, req *UnifiedOrderRequest, options ...Option) (*UnifiedOrderResponse, error) {
 	opts, err := NewOptions(options...)
 	if err != nil {

@@ -219,7 +219,7 @@ func postMchXML(ctx context.Context, config Configuration, url string, reqXML, r
 		return err
 	}
 	if actualSign != suppliedSign {
-		return fmt.Errorf("Response has actual sign %+q... but got %+q", actualSign[:8], suppliedSign)
+		return fmt.Errorf("Response has actual sign %+q but got %+q", actualSign, suppliedSign)
 	}
 
 	// 全部通过
