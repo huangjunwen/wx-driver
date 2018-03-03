@@ -1,7 +1,7 @@
 package mch
 
-// APIVersion 代表 API 版本号
-type APIVersion struct{ v string }
+// Version 代表 API 版本号
+type Version struct{ v string }
 
 // TradeType 表示交易方式
 type TradeType struct{ v string }
@@ -26,8 +26,8 @@ const (
 )
 
 var (
-	APIVersionDefault = APIVersion{""}
-	APIVersion1       = APIVersion{"1.0"}
+	VersionDefault = Version{""}
+	Version1       = Version{"1.0"}
 )
 
 var (
