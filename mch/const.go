@@ -1,6 +1,6 @@
 package mch
 
-// Version 代表 API 版本号
+// Version 代表 API 版本号，TODO: 接口加上 Version 逻辑
 type Version struct{ v string }
 
 // TradeType 表示交易方式
@@ -29,6 +29,11 @@ var (
 	VersionDefault = Version{""}
 	Version1       = Version{"1.0"}
 )
+
+// String 实现 Stringer 接口
+func (v Version) String() string {
+	return v.v
+}
 
 var (
 	// TradeTypeInvalid 表示无效交易类型

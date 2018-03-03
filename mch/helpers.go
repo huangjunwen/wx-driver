@@ -46,7 +46,7 @@ func signMchXML(x *mchXML, signType SignType, key string) (actual, supplied stri
 	}
 
 	// 开始签名
-	x.EachField(func(i int, fieldName, fieldValue string) error {
+	x.IterateFields(func(i int, fieldName, fieldValue string) error {
 		// 值为空不参与签名
 		if fieldValue == "" {
 			return nil
@@ -158,7 +158,7 @@ func postMchXML(ctx context.Context, config Configuration, path string, reqXML, 
 	returnMsg := ""
 	appID := ""
 	mchID := ""
-	respXML.EachField(func(_ int, name, val string) error {
+	respXML.IterateFields(func(_ int, name, val string) error {
 		switch name {
 		case "return_code":
 			returnCode = val

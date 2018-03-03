@@ -24,8 +24,8 @@ type mchXMLField struct {
 	Text    string `xml:",chardata"`
 }
 
-// EachField 迭代 fields
-func (x *mchXML) EachField(fns ...func(i int, fieldName, fieldValue string) error) error {
+// IterateFields 迭代 fields
+func (x *mchXML) IterateFields(fns ...func(i int, fieldName, fieldValue string) error) error {
 	for idx, field := range x.Fields {
 		for _, fn := range fns {
 			if err := fn(idx, field.XMLName.Local, field.Text); err != nil {

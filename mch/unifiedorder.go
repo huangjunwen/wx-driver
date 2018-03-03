@@ -23,7 +23,7 @@ var (
 type UnifiedOrderRequest struct {
 	// ----- 必填字段 -----
 	OutTradeNo     string    // out_trade_no String(32) 商户系统内部订单号 同一个商户号下唯一
-	TotalFee       uint      // total_fee Int 标价金额 单位为分
+	TotalFee       uint32    // total_fee Int 标价金额 单位为分
 	Body           string    // body String(128) 商品描述 <商场名>-<商品名>
 	SpbillCreateIp string    // spbill_create_ip String(16) 终端IP
 	NotifyUrl      string    // notify_url String(256) 通知地址
@@ -146,7 +146,7 @@ func UnifiedOrder(ctx context.Context, config Configuration, req *UnifiedOrderRe
 	}
 
 	resp := UnifiedOrderResponse{}
-	err = respXML.EachField(resp.MchResponse.mchXMLIter, func(_ int, fieldName, fieldValue string) error {
+	err = respXML.IterateFields(resp.MchResponse.iterCallback, func(_ int, fieldName, fieldValue string) error {
 		switch fieldName {
 		case "trade_type":
 			resp.TradeType = ParseTradeType(fieldValue)

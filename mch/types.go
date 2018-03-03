@@ -31,7 +31,7 @@ func (resp *MchResponse) Error() error {
 	return fmt.Errorf("Mch result errcode=%+q errmsg=%+q", resp.ErrCode, resp.ErrCodeDes)
 }
 
-func (resp *MchResponse) mchXMLIter(i int, fieldName, fieldValue string) error {
+func (resp *MchResponse) iterCallback(i int, fieldName, fieldValue string) error {
 	switch fieldName {
 	case "result_code":
 		resp.ResultCode = fieldValue
