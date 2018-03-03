@@ -10,13 +10,16 @@ import (
 )
 
 // postMchXML 调用 mch xml 接口，大致过程如下：
+//
 //   - 添加公共字段 appid/mch_id/mch_id/nonce_str/sign_type
 //   - 签名并添加 sign
 //   - 调用 api，等待结果或错误
 //   - 检查 return_code/return_msg
 //   - 验证签名
 //   - 验证 appid/mch_id
-// 所以若返回 err 为 nil，表明上述所有过程均无出错，但业务上的结果需要调用者检查 respXML 各字段方可知道
+//   - 检查 result_code
+//
+// NOTE: 所有参数均不能为空
 func postMchXML(ctx context.Context, config Configuration, path string, reqXML, respXML MchXML, opts *Options) error {
 	// 选择 HTTPClient：opts.HTTPClient > DefaultOptions.HTTPClient > wxdriver.DefaultHTTPClient > http.DefaultClient
 	client := opts.HTTPClient
@@ -79,7 +82,7 @@ func postMchXML(ctx context.Context, config Configuration, path string, reqXML, 
 
 	// 检查通讯标识 return code，若失败是没有签名的
 	if respXML["return_code"] != "SUCCESS" {
-		return fmt.Errorf("Response return %+q with msg: %+q", respXML["return_code"], respXML["return_msg"])
+		return fmt.Errorf("Response return_code=%+q return_msg=%+q", respXML["return_code"], respXML["return_msg"])
 	}
 
 	// 验证签名
@@ -97,6 +100,11 @@ func postMchXML(ctx context.Context, config Configuration, path string, reqXML, 
 	}
 	if mchID != "" && mchID != config.WechatPayMchID() {
 		return fmt.Errorf("Response <mch_id> expect %+q but got %+q", config.WechatPayMchID(), mchID)
+	}
+
+	// 检查业务标识 result code
+	if respXML["result_code"] != "SUCCESS" {
+		return fmt.Errorf("Response result_code=%+q err_code=%+q err_code_des=%+q", respXML["result_code"], respXML["err_code"], respXML["err_code_des"])
 	}
 
 	// 全部通过
