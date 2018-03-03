@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-type MchXML map[string][]byte
+type MchXML map[string]string
 
 func (x MchXML) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	if start.Name.Local != "xml" {
@@ -35,7 +35,7 @@ func (x MchXML) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 			// 取出 <xml><sub> 层的 chardata 作为 fieldValue
 			// Unmarshal maps an XML element to a string or []byte by saving the concatenation of
 			// that element's character data in the string or []byte. The saved []byte is never nil.
-			var fieldValue []byte
+			var fieldValue string
 			if err := d.DecodeElement(&fieldValue, &t0); err != nil {
 				return err
 			}
