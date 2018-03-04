@@ -3,11 +3,61 @@ package mch
 import (
 	"bytes"
 	"context"
+	"crypto/hmac"
+	"crypto/md5"
+	"crypto/sha256"
 	"encoding/xml"
 	"fmt"
 	"github.com/huangjunwen/wxdriver"
+	"hash"
 	"net/http"
+	"sort"
 )
+
+// signMchXML 对 MchXML 进行签名，签名算法见微信支付《安全规范》，signType 为空时默认使用 MD5，
+// x 中 sign 字段和空值字段皆不参与签名
+func signMchXML(x MchXML, signType SignType, key string) string {
+	// 选择 hash
+	var h hash.Hash
+	switch signType {
+	case SignTypeHMACSHA256:
+		h = hmac.New(sha256.New, []byte(key))
+	default:
+		h = md5.New()
+	}
+
+	// 排序字段名
+	fieldNames := make([]string, 0, len(x))
+	for fieldName, _ := range x {
+		fieldNames = append(fieldNames, fieldName)
+	}
+	sort.Strings(fieldNames)
+
+	// 签名
+	for _, fieldName := range fieldNames {
+		// sign 不参与签名
+		if fieldName == "sign" {
+			continue
+		}
+
+		fieldValue := x[fieldName]
+		// 值为空不参与签名
+		if fieldValue == "" {
+			continue
+		}
+
+		h.Write([]byte(fieldName))
+		h.Write([]byte("="))
+		h.Write([]byte(fieldValue))
+		h.Write([]byte("&"))
+	}
+	h.Write([]byte("key="))
+	h.Write([]byte(key))
+
+	// 需要大写
+	return fmt.Sprintf("%X", h.Sum(nil))
+
+}
 
 // postMchXML 调用 mch xml 接口，大致过程如下：
 //
@@ -53,7 +103,7 @@ func postMchXML(ctx context.Context, config Configuration, path string, reqXML M
 	reqXML["mch_id"] = config.WechatPayMchID()
 	reqXML["sign_type"] = signType.String()
 	reqXML["nonce_str"] = wxdriver.NonceStr(16) // 32 位以内
-	reqXML["sign"] = reqXML.Sign(signType, config.WechatPayKey())
+	reqXML["sign"] = signMchXML(reqXML, signType, config.WechatPayKey())
 
 	// 编码
 	reqBody, err := xml.Marshal(reqXML)
@@ -86,7 +136,7 @@ func postMchXML(ctx context.Context, config Configuration, path string, reqXML M
 	}
 
 	// 验证签名
-	sign := respXML.Sign(signType, config.WechatPayKey())
+	sign := signMchXML(respXML, signType, config.WechatPayKey())
 	suppliedSign := respXML["sign"]
 	if suppliedSign == "" || suppliedSign != sign {
 		return nil, fmt.Errorf("Response <sign> expect %+q but got %+q", sign, suppliedSign)
@@ -112,8 +162,8 @@ func postMchXML(ctx context.Context, config Configuration, path string, reqXML M
 
 }
 
-// handleMchXML 处理 mch xml 回调
-func handleMchXML(handler func(context.Context, MchXML) error, selector ConfigurationSelector, verifySign bool) http.Handler {
+// handleMchXML 处理 mch xml 回调，若 handler 返回非 nil error，则该 http.Handler 返回 FAIL return_code 给微信
+func handleMchXML(handler func(context.Context, MchXML) error) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
@@ -143,40 +193,7 @@ func handleMchXML(handler func(context.Context, MchXML) error, selector Configur
 			return
 		}
 
-		// 提取 appID 和 mchID 以及查找对应配置
-		appID := reqXML["appid"]
-		mchID := reqXML["mch_id"]
-		config := selector.Select(appID, mchID)
-		if config == nil {
-			writeResponse(false, "")
-			return
-		}
-
-		// 若需要验证签名
-		if verifySign {
-			// 提取签名方式
-			signType := SignTypeInvalid
-			if reqXML["sign_type"] != "" {
-				signType = ParseSignType(reqXML["sign_type"])
-				if !signType.IsValid() {
-					writeResponse(false, "")
-					return
-				}
-			}
-			if signType == SignTypeInvalid {
-				signType = SignTypeMD5
-			}
-
-			// 验证签名
-			sign := reqXML.Sign(signType, config.WechatPayKey())
-			suppliedSign := reqXML["sign"]
-			if suppliedSign == "" || suppliedSign != sign {
-				writeResponse(false, "")
-				return
-			}
-		}
-
-		// 执行
+		// 执行 handler
 		if err := handler(r.Context(), reqXML); err != nil {
 			writeResponse(false, err.Error())
 			return
@@ -184,4 +201,45 @@ func handleMchXML(handler func(context.Context, MchXML) error, selector Configur
 		writeResponse(true, "")
 
 	})
+}
+
+var (
+	// 不需要给提示
+	emptyStrErr = fmt.Errorf("")
+)
+
+// handleSignedMchXML 处理带签名的 mch xml 回调，需要传入一个 ConfigurationSelector 用于选择配置
+func handleSignedMchXML(handler func(context.Context, MchXML) error, selector ConfigurationSelector) http.Handler {
+
+	return handleMchXML(func(ctx context.Context, reqXML MchXML) error {
+		// 从 appid 和 mch_id 选择配置（多配置支持）
+		config := selector.Select(reqXML["appid"], reqXML["mch_id"])
+		if config == nil {
+			return emptyStrErr
+		}
+
+		// 选择签名类型
+		signType := SignTypeInvalid
+		if reqXML["sign_type"] != "" {
+			signType = ParseSignType(reqXML["sign_type"])
+			if !signType.IsValid() {
+				return emptyStrErr
+			}
+		}
+		if !signType.IsValid() {
+			signType = SignTypeMD5
+		}
+
+		// 验证签名
+		sign := signMchXML(reqXML, signType, config.WechatPayKey())
+		suppliedSign := reqXML["sign"]
+		if suppliedSign == "" || suppliedSign != sign {
+			return emptyStrErr
+		}
+
+		// 通过了，执行 handler
+		return handler(ctx, reqXML)
+
+	})
+
 }

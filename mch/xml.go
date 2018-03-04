@@ -1,13 +1,8 @@
 package mch
 
 import (
-	"crypto/hmac"
-	"crypto/md5"
-	"crypto/sha256"
 	"encoding/xml"
 	"fmt"
-	"hash"
-	"sort"
 )
 
 // MchXML 代表微信支付接口的 xml 数据，形如：
@@ -102,49 +97,4 @@ func (x MchXML) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 		return err
 	}
 	return nil
-}
-
-// Sign 对该 xml 数据进行签名，签名算法见微信支付《安全规范》，signType 为空时默认使用 MD5，
-// x 中 sign 字段和空值字段皆不参与签名
-func (x MchXML) Sign(signType SignType, key string) string {
-	// 选择 hash
-	var h hash.Hash
-	switch signType {
-	case SignTypeHMACSHA256:
-		h = hmac.New(sha256.New, []byte(key))
-	default:
-		h = md5.New()
-	}
-
-	// 排序字段名
-	fieldNames := make([]string, 0, len(x))
-	for fieldName, _ := range x {
-		fieldNames = append(fieldNames, fieldName)
-	}
-	sort.Strings(fieldNames)
-
-	// 签名
-	for _, fieldName := range fieldNames {
-		// sign 不参与签名
-		if fieldName == "sign" {
-			continue
-		}
-
-		fieldValue := x[fieldName]
-		// 值为空不参与签名
-		if fieldValue == "" {
-			continue
-		}
-
-		h.Write([]byte(fieldName))
-		h.Write([]byte("="))
-		h.Write([]byte(fieldValue))
-		h.Write([]byte("&"))
-	}
-	h.Write([]byte("key="))
-	h.Write([]byte(key))
-
-	// 需要大写
-	return fmt.Sprintf("%X", h.Sum(nil))
-
 }
