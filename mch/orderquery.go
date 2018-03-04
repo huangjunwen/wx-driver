@@ -51,13 +51,17 @@ type OrderQueryResponse struct {
 	Attach         string // attach String(127) 附加数据
 }
 
-func (resp *OrderQueryResponse) extractFields(respXML MchXML) error {
+func newOrderQueryResponse(respXML MchXML) (*OrderQueryResponse, error) {
 	var err error
+
+	resp := &OrderQueryResponse{
+		MchXML: respXML,
+	}
 
 	resp.OutTradeNo = respXML["out_trade_no"]
 	resp.TradeState = ParseTradeState(respXML["trade_state"])
 	if !resp.TradeState.IsValid() {
-		return ErrOrderQueryUnknownTradState
+		return nil, ErrOrderQueryUnknownTradState
 	}
 
 	// 以下全都是可选字段
@@ -69,26 +73,29 @@ func (resp *OrderQueryResponse) extractFields(respXML MchXML) error {
 	if respXML["time_end"] != "" {
 		resp.TimeEnd, err = time.Parse(DatetimeLayout, respXML["time_end"])
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
 	if respXML["total_fee"] != "" {
 		resp.TotalFee, err = strconv.ParseUint(respXML["total_fee"], 10, 32)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 	if respXML["cash_fee"] != "" {
 		resp.CashFee, err = strconv.ParseUint(respXML["cash_fee"], 10, 32)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 	resp.FeeType = respXML["fee_type"]
 	resp.CashFeeType = respXML["cash_fee_type"]
 	if respXML["rate"] != "" {
 		resp.Rate, err = strconv.ParseUint(respXML["rate"], 10, 64)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	resp.DeviceInfo = respXML["device_info"]
@@ -96,7 +103,8 @@ func (resp *OrderQueryResponse) extractFields(respXML MchXML) error {
 	resp.IsSubscribe = respXML["is_subscribe"]
 	resp.Attach = respXML["attach"]
 
-	return nil
+	return resp, nil
+
 }
 
 // OrderQuery 查询订单接口
@@ -106,6 +114,7 @@ func OrderQuery(ctx context.Context, config Configuration, req *OrderQueryReques
 		return nil, err
 	}
 
+	// req -> reqXML
 	reqXML := MchXML{}
 	if req.TransactionID != "" {
 		reqXML["transaction_id"] = req.TransactionID
@@ -115,18 +124,18 @@ func OrderQuery(ctx context.Context, config Configuration, req *OrderQueryReques
 		return nil, ErrOrderQueryMissingID
 	}
 
+	// reqXML -> respXML
 	respXML, err := postMchXML(ctx, config, "/pay/orderquery", reqXML, options)
 	if err != nil {
 		return nil, err
 	}
 
-	resp := OrderQueryResponse{
-		MchXML: respXML,
-	}
-	if err := resp.extractFields(respXML); err != nil {
+	// respXML -> resp
+	resp, err := newOrderQueryResponse(respXML)
+	if err != nil {
 		return nil, err
 	}
 
-	return &resp, nil
+	return resp, nil
 
 }
