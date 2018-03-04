@@ -48,16 +48,23 @@ type UnifiedOrderRequest struct {
 
 // UnifiedOrderResponse 为统一下单接口响应
 type UnifiedOrderResponse struct {
-	MchXML     MchXML    // 原始数据
-	TradeType  TradeType // trade_type String(16) 交易类型
-	PrepayID   string    // prepay_id String(64) 预支付交易会话标识
-	CodeUrl    string    // code_url String(64) 二维码链接 trade_type 为 NATIVE 时有返回
-	MWebUrl    string    // mweb_url String(64) 支付跳转链接 trade_type 为 MWEB 时有返回 可通过访问该url来拉起微信客户端
-	DeviceInfo string    // device_info String(32) 设备号
+	// ----- 原始数据 -----
+	MchXML MchXML
+
+	// ----- 必返回字段 -----
+	TradeType TradeType // trade_type String(16) 交易类型
+	PrepayID  string    // prepay_id String(64) 预支付交易会话标识
+
+	// ----- 特定条件下返回字段 -----
+	CodeUrl string // code_url String(64) 二维码链接 trade_type 为 NATIVE 时有返回
+	MWebUrl string // mweb_url String(64) 支付跳转链接 trade_type 为 MWEB 时有返回 可通过访问该url来拉起微信客户端
+
+	// ----- 其它字段 -----
+	DeviceInfo string // device_info String(32) 设备号
 
 }
 
-// UnifiedOrder 统一下单
+// UnifiedOrder 统一下单接口
 func UnifiedOrder(ctx context.Context, config Configuration, req *UnifiedOrderRequest, opts ...Option) (*UnifiedOrderResponse, error) {
 	options, err := NewOptions(opts...)
 	if err != nil {

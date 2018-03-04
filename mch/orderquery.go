@@ -13,19 +13,23 @@ var (
 	ErrOrderQueryUnknownTradState = errors.New("Unknwon trade_state in OrderQueryResponse")
 )
 
+// OrderQueryRequest 为查询订单接口请求
 type OrderQueryRequest struct {
 	// ----- 以下二选一 -----
 	TransactionID string // transaction_id String(32) 微信支付订单号 建议优先使用
 	OutTradeNo    string // out_trade_no String(32) 商户系统内部订单号 同一个商户号下唯一
 }
 
+// OrderQueryResponse 为查询订单接口响应
 type OrderQueryResponse struct {
+	// ----- 原始数据 -----
 	MchXML MchXML
-	// ----- 必传字段 -----
+
+	// ----- 必返回字段 -----
 	OutTradeNo string     // out_trade_no String(32) 商户系统内部订单号 同一个商户号下唯一
 	TradeState TradeState // trade_state String(32) 交易状态
 
-	// ----- 支付完成后字段 -----
+	// ----- 支付完成后返回字段 -----
 	TransactionID string    // transaction_id String(32) 微信支付订单号
 	OpenID        string    // openid String(128) 用户标识
 	TradeType     TradeType // trade_type String(16) 交易类型
@@ -40,7 +44,7 @@ type OrderQueryResponse struct {
 	// TODO: 优惠金额字段
 	// TODO: 这里涉及不同 Version 时返回的字段不一样，应当用统一的结构存储
 
-	// ----- 选传字段 -----
+	// ----- 其它字段 -----
 	DeviceInfo     string // device_info String(32) 设备号
 	TradeStateDesc string // trade_state_desc String(256) 交易状态描述
 	IsSubscribe    string // is_subscribe String(1) Y/N 是否关注公众账号 仅在公众账号类型支付有效
@@ -95,6 +99,7 @@ func (resp *OrderQueryResponse) extractFields(respXML MchXML) error {
 	return nil
 }
 
+// OrderQuery 查询订单接口
 func OrderQuery(ctx context.Context, config Configuration, req *OrderQueryRequest, opts ...Option) (*OrderQueryResponse, error) {
 	options, err := NewOptions(opts...)
 	if err != nil {
