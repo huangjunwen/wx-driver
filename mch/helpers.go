@@ -20,9 +20,9 @@ import (
 //   - 检查 result_code
 //
 // NOTE: 所有参数均不能为空
-func postMchXML(ctx context.Context, config Configuration, path string, reqXML, respXML MchXML, opts *Options) error {
-	// 选择 HTTPClient：opts.HTTPClient > DefaultOptions.HTTPClient > wxdriver.DefaultHTTPClient > http.DefaultClient
-	client := opts.HTTPClient
+func postMchXML(ctx context.Context, config Configuration, path string, reqXML, respXML MchXML, options *Options) error {
+	// 选择 HTTPClient：options.HTTPClient > DefaultOptions.HTTPClient > wxdriver.DefaultHTTPClient > http.DefaultClient
+	client := options.HTTPClient
 	if client == nil {
 		client = DefaultOptions.HTTPClient
 	}
@@ -34,7 +34,7 @@ func postMchXML(ctx context.Context, config Configuration, path string, reqXML, 
 	}
 
 	// 选择 URLBase
-	urlBase := opts.URLBase
+	urlBase := options.URLBase
 	if urlBase == "" {
 		urlBase = DefaultOptions.URLBase
 	}
@@ -43,7 +43,7 @@ func postMchXML(ctx context.Context, config Configuration, path string, reqXML, 
 	}
 
 	// 选择 SignType
-	signType := opts.SignType
+	signType := options.SignType
 	if !signType.IsValid() {
 		signType = SignTypeMD5
 	}

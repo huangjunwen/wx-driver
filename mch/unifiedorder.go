@@ -42,7 +42,8 @@ type UnifiedOrderRequest struct {
 	TimeExpire time.Time // time_expire String(14) 交易结束时间
 	GoodsTag   string    // goods_tag String(32) 订单优惠标记
 	LimitPay   string    // limit_pay String(32)指定支付方式
-	// TOOD: SceneInfo
+
+	// TOOD: 单品优惠
 }
 
 // UnifiedOrderResponse 为统一下单接口响应
@@ -57,8 +58,8 @@ type UnifiedOrderResponse struct {
 }
 
 // UnifiedOrder 统一下单
-func UnifiedOrder(ctx context.Context, config Configuration, req *UnifiedOrderRequest, options ...Option) (*UnifiedOrderResponse, error) {
-	opts, err := NewOptions(options...)
+func UnifiedOrder(ctx context.Context, config Configuration, req *UnifiedOrderRequest, opts ...Option) (*UnifiedOrderResponse, error) {
+	options, err := NewOptions(opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +143,7 @@ func UnifiedOrder(ctx context.Context, config Configuration, req *UnifiedOrderRe
 
 	// reqXML -> respXML
 	respXML := MchXML{}
-	err = postMchXML(ctx, config, "/pay/unifiedorder", reqXML, respXML, opts)
+	err = postMchXML(ctx, config, "/pay/unifiedorder", reqXML, respXML, options)
 	if err != nil {
 		return nil, err
 	}

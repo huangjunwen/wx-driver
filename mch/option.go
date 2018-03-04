@@ -7,7 +7,7 @@ import (
 
 var (
 	// DefaultOptions 为 mch 模块的默认 Options
-	DefaultOptions Options
+	DefaultOptions = &Options{}
 )
 
 // Options 包含调用微信支付接口时的选项，NOTE: 某些选项未必对所有接口都有意义
@@ -57,14 +57,22 @@ func UseSignType(signType SignType) Option {
 	}
 }
 
-// NewOptions 组装 Options
-func NewOptions(options ...Option) (*Options, error) {
-	// 以默认选项为蓝本
-	ret := DefaultOptions
-	for _, option := range options {
-		if err := option(&ret); err != nil {
+// NewOptions 以 DefaultOptions 为基础设置选项
+func NewOptions(opts ...Option) (*Options, error) {
+	ret := (*DefaultOptions)
+	for _, opt := range opts {
+		if err := opt(&ret); err != nil {
 			return nil, err
 		}
 	}
 	return &ret, nil
+}
+
+// MustOptions 是 must 版 NewOptions
+func MustOptions(opts ...Option) *Options {
+	ret, err := NewOptions(opts...)
+	if err != nil {
+		panic(err)
+	}
+	return ret
 }
