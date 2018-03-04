@@ -12,11 +12,22 @@ type Configuration interface {
 	WechatPayKey() string
 }
 
+// ConfigurationSelector 用于选择配置
+type ConfigurationSelector interface {
+	// Select 通过 appID 和 MchID 查找对应配置，若找不到应该返回 nil
+	Select(appID, MchID string) Configuration
+}
+
 // configuration 是默认 Configuration 实现
 type configuration struct {
 	appID    string
 	payMchID string
 	payKey   string
+}
+
+// singleConfigurationSelector 包含单个 Configuration
+type singleConfigurationSelector struct {
+	config Configuration
 }
 
 // NewConfiguration 构造一个 Configuration
@@ -38,4 +49,16 @@ func (c *configuration) WechatPayMchID() string {
 
 func (c *configuration) WechatPayKey() string {
 	return c.payKey
+}
+
+// NewSingleConfigurationSelector 返回一个单配置 selector
+func NewSingleConfigurationSelector(config Configuration) ConfigurationSelector {
+	return singleConfigurationSelector{config: config}
+}
+
+func (s singleConfigurationSelector) Select(appID, mchID string) Configuration {
+	if s.config.WechatAppID() == appID && s.config.WechatPayMchID() == mchID {
+		return s.config
+	}
+	return nil
 }

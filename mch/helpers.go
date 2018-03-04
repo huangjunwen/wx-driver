@@ -76,12 +76,11 @@ func postMchXML(ctx context.Context, config Configuration, path string, reqXML M
 
 	// 解码
 	respXML := MchXML{}
-	decoder := xml.NewDecoder(resp.Body)
-	if err := decoder.Decode(&respXML); err != nil {
+	if err := xml.NewDecoder(resp.Body).Decode(&respXML); err != nil {
 		return nil, err
 	}
 
-	// 检查通讯标识 return code，若失败是没有签名的
+	// 检查通讯标识 return_code，若失败是没有签名的
 	if respXML["return_code"] != "SUCCESS" {
 		return nil, fmt.Errorf("Response return_code=%+q return_msg=%+q", respXML["return_code"], respXML["return_msg"])
 	}
@@ -103,7 +102,7 @@ func postMchXML(ctx context.Context, config Configuration, path string, reqXML M
 		return nil, fmt.Errorf("Response <mch_id> expect %+q but got %+q", config.WechatPayMchID(), mchID)
 	}
 
-	// 检查业务标识 result code
+	// 检查业务标识 result_code
 	if respXML["result_code"] != "SUCCESS" {
 		return nil, fmt.Errorf("Response result_code=%+q err_code=%+q err_code_des=%+q", respXML["result_code"], respXML["err_code"], respXML["err_code_des"])
 	}
@@ -111,4 +110,78 @@ func postMchXML(ctx context.Context, config Configuration, path string, reqXML M
 	// 全部通过
 	return respXML, nil
 
+}
+
+// handleMchXML 处理 mch xml 回调
+func handleMchXML(handler func(context.Context, MchXML) error, selector ConfigurationSelector, verifySign bool) http.Handler {
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		writeResponse := func(success bool, msg string) {
+			respXML := MchXML{}
+			if success {
+				respXML["return_code"] = "SUCCESS"
+			} else {
+				respXML["return_code"] = "FAIL"
+			}
+			if msg != "" {
+				respXML["return_msg"] = msg
+			}
+			xml.NewEncoder(w).Encode(respXML)
+		}
+
+		// 解码
+		reqXML := MchXML{}
+		if err := xml.NewDecoder(r.Body).Decode(&reqXML); err != nil {
+			writeResponse(false, "")
+			return
+		}
+
+		// 检查通讯标识 return code，若失败了还回调 ??!
+		if reqXML["return_code"] != "SUCCESS" {
+			writeResponse(false, "")
+			return
+		}
+
+		// 提取 appID 和 mchID 以及查找对应配置
+		appID := reqXML["appid"]
+		mchID := reqXML["mch_id"]
+		config := selector.Select(appID, mchID)
+		if config == nil {
+			writeResponse(false, "")
+			return
+		}
+
+		// 若需要验证签名
+		if verifySign {
+			// 提取签名方式
+			signType := SignTypeInvalid
+			if reqXML["sign_type"] != "" {
+				signType = ParseSignType(reqXML["sign_type"])
+				if !signType.IsValid() {
+					writeResponse(false, "")
+					return
+				}
+			}
+			if signType == SignTypeInvalid {
+				signType = SignTypeMD5
+			}
+
+			// 验证签名
+			sign := reqXML.Sign(signType, config.WechatPayKey())
+			suppliedSign := reqXML["sign"]
+			if suppliedSign == "" || suppliedSign != sign {
+				writeResponse(false, "")
+				return
+			}
+		}
+
+		// 执行
+		if err := handler(r.Context(), reqXML); err != nil {
+			writeResponse(false, err.Error())
+			return
+		}
+		writeResponse(true, "")
+
+	})
 }
