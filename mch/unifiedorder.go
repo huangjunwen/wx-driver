@@ -23,7 +23,7 @@ var (
 type UnifiedOrderRequest struct {
 	// ----- 必填字段 -----
 	OutTradeNo     string    // out_trade_no String(32) 商户系统内部订单号 同一个商户号下唯一
-	TotalFee       uint32    // total_fee Int 标价金额 单位为分
+	TotalFee       uint64    // total_fee Int 标价金额 单位为分
 	Body           string    // body String(128) 商品描述 <商场名>-<商品名>
 	SpbillCreateIp string    // spbill_create_ip String(16) 终端IP
 	NotifyUrl      string    // notify_url String(256) 通知地址
@@ -75,7 +75,7 @@ func UnifiedOrder(ctx context.Context, config Configuration, req *UnifiedOrderRe
 	if req.TotalFee == 0 {
 		return nil, ErrUnifiedOrderMissingTotalFee
 	} else {
-		reqXML["total_fee"] = strconv.FormatUint(uint64(req.TotalFee), 10)
+		reqXML["total_fee"] = strconv.FormatUint(req.TotalFee, 10)
 	}
 
 	if req.Body == "" {
