@@ -95,6 +95,9 @@ func postMchXML(ctx context.Context, config Configuration, path string, reqXML M
 	// 选择 SignType
 	signType := options.SignType
 	if !signType.IsValid() {
+		signType = DefaultOptions.SignType
+	}
+	if !signType.IsValid() {
 		signType = SignTypeMD5
 	}
 
@@ -203,28 +206,29 @@ func handleMchXML(handler func(context.Context, MchXML) error) http.Handler {
 	})
 }
 
-var (
-	// 不需要给提示
-	emptyStrErr = fmt.Errorf("")
-)
-
 // handleSignedMchXML 处理带签名的 mch xml 回调，需要传入一个 ConfigurationSelector 用于选择配置
-func handleSignedMchXML(handler func(context.Context, MchXML) error, selector ConfigurationSelector) http.Handler {
+func handleSignedMchXML(handler func(context.Context, MchXML) error, selector ConfigurationSelector, options *Options) http.Handler {
 
 	return handleMchXML(func(ctx context.Context, reqXML MchXML) error {
 		// 从 appid 和 mch_id 选择配置（多配置支持）
 		config := selector.Select(reqXML["appid"], reqXML["mch_id"])
 		if config == nil {
-			return emptyStrErr
+			return fmt.Errorf("Unknown app or mch")
 		}
 
-		// 选择签名类型
+		// 选择签名类型：请求中的 sign_type > options 中的 sign_type > DefaultOptions 中的 sign_type > 默认
 		signType := SignTypeInvalid
 		if reqXML["sign_type"] != "" {
 			signType = ParseSignType(reqXML["sign_type"])
 			if !signType.IsValid() {
-				return emptyStrErr
+				return fmt.Errorf("Unknown sign type")
 			}
+		}
+		if !signType.IsValid() {
+			signType = options.SignType
+		}
+		if !signType.IsValid() {
+			signType = DefaultOptions.SignType
 		}
 		if !signType.IsValid() {
 			signType = SignTypeMD5
@@ -234,7 +238,7 @@ func handleSignedMchXML(handler func(context.Context, MchXML) error, selector Co
 		sign := signMchXML(reqXML, signType, config.WechatPayKey())
 		suppliedSign := reqXML["sign"]
 		if suppliedSign == "" || suppliedSign != sign {
-			return emptyStrErr
+			return fmt.Errorf("Sign error")
 		}
 
 		// 通过了，执行 handler

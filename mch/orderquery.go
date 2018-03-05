@@ -129,7 +129,8 @@ func OrderQuery(ctx context.Context, config Configuration, req *OrderQueryReques
 
 }
 
-// OrderNotify 创建一个处理支付结果通知的 http.Handler
+// OrderNotify 创建一个处理支付结果通知的 http.Handler，NOTE：请使用与在统一下单一样的 options, 否则例如统一下单
+// 使用了 HMAC-SHA256 签名，而这里没有，则验证签名有可能会不通过
 func OrderNotify(handler func(context.Context, *OrderQueryResponse) error, selector ConfigurationSelector, opts ...Option) http.Handler {
 
 	return handleSignedMchXML(func(ctx context.Context, x MchXML) error {
@@ -148,6 +149,6 @@ func OrderNotify(handler func(context.Context, *OrderQueryResponse) error, selec
 		// 依据返回的结果执行 handler
 		return handler(ctx, resp)
 
-	}, selector)
+	}, selector, MustOptions(opts...))
 
 }
