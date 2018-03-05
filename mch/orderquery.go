@@ -52,13 +52,7 @@ type OrderQueryResponse struct {
 	Attach         string // attach String(127) 附加数据
 }
 
-// OrderQuery 查询订单接口
-func OrderQuery(ctx context.Context, config Configuration, req *OrderQueryRequest, opts ...Option) (*OrderQueryResponse, error) {
-	options, err := NewOptions(opts...)
-	if err != nil {
-		return nil, err
-	}
-
+func orderQuery(ctx context.Context, config Configuration, req *OrderQueryRequest, opts []Option) (*OrderQueryResponse, error) {
 	// req -> reqXML
 	reqXML := MchXML{}
 	if req.TransactionID != "" {
@@ -70,7 +64,7 @@ func OrderQuery(ctx context.Context, config Configuration, req *OrderQueryReques
 	}
 
 	// reqXML -> respXML
-	respXML, err := postMchXML(ctx, config, "/pay/orderquery", reqXML, options)
+	respXML, err := postMchXML(ctx, config, "/pay/orderquery", reqXML, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -129,8 +123,14 @@ func OrderQuery(ctx context.Context, config Configuration, req *OrderQueryReques
 
 }
 
-// OrderNotify 创建一个处理支付结果通知的 http.Handler，NOTE：请使用与在统一下单一样的 options, 否则例如统一下单
-// 使用了 HMAC-SHA256 签名，而这里没有，则验证签名有可能会不通过
+// OrderQuery 查询订单接口
+func OrderQuery(ctx context.Context, config Configuration, req *OrderQueryRequest, opts ...Option) (*OrderQueryResponse, error) {
+	return orderQuery(ctx, config, req, opts)
+}
+
+// OrderNotify 创建一个处理支付结果通知的 http.Handler
+//
+// NOTE：请使用与在统一下单一样的 options, 否则例如统一下单使用了 HMAC-SHA256 签名，而这里没有，则验证签名有可能会不通过
 func OrderNotify(handler func(context.Context, *OrderQueryResponse) error, selector ConfigurationSelector, opts ...Option) http.Handler {
 
 	return handleSignedMchXML(func(ctx context.Context, x MchXML) error {
@@ -138,17 +138,14 @@ func OrderNotify(handler func(context.Context, *OrderQueryResponse) error, selec
 		// 1. 回调所带的参数虽然与查询接口返回的几乎一致，但依据文档显示回调里好像没有包含 trade_state，
 		//    再次发起查询能与主动查询保持一致
 		// 2. 回调虽然带有签名，但万一 key 泄漏则任何人都可以伪造；主动发起查询则能多一层防护
-		resp, err := OrderQuery(ctx, selector.Select(x["appid"], x["mch_id"]), &OrderQueryRequest{
+		resp, err := orderQuery(ctx, selector.Select(x["appid"], x["mch_id"]), &OrderQueryRequest{
 			TransactionID: x["transaction_id"],
 			OutTradeNo:    x["out_trade_no"],
-		}, opts...)
+		}, opts)
 		if err != nil {
 			return err
 		}
-
-		// 依据返回的结果执行 handler
 		return handler(ctx, resp)
-
-	}, selector, MustOptions(opts...))
+	}, selector, opts)
 
 }

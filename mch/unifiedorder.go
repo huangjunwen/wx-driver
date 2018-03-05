@@ -66,11 +66,6 @@ type UnifiedOrderResponse struct {
 
 // UnifiedOrder 统一下单接口
 func UnifiedOrder(ctx context.Context, config Configuration, req *UnifiedOrderRequest, opts ...Option) (*UnifiedOrderResponse, error) {
-	options, err := NewOptions(opts...)
-	if err != nil {
-		return nil, err
-	}
-
 	// req -> reqXML
 	reqXML := MchXML{}
 	if req.OutTradeNo == "" {
@@ -149,7 +144,7 @@ func UnifiedOrder(ctx context.Context, config Configuration, req *UnifiedOrderRe
 	}
 
 	// reqXML -> respXML
-	respXML, err := postMchXML(ctx, config, "/pay/unifiedorder", reqXML, options)
+	respXML, err := postMchXML(ctx, config, "/pay/unifiedorder", reqXML, opts)
 	if err != nil {
 		return nil, err
 	}
