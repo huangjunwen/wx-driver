@@ -3,6 +3,7 @@ package mch
 import (
 	"context"
 	"errors"
+	"net/http"
 	"strconv"
 	"time"
 )
@@ -51,62 +52,6 @@ type OrderQueryResponse struct {
 	Attach         string // attach String(127) 附加数据
 }
 
-func newOrderQueryResponse(respXML MchXML) (*OrderQueryResponse, error) {
-	var err error
-
-	resp := &OrderQueryResponse{
-		MchXML: respXML,
-	}
-
-	resp.OutTradeNo = respXML["out_trade_no"]
-	resp.TradeState = ParseTradeState(respXML["trade_state"])
-	if !resp.TradeState.IsValid() {
-		return nil, ErrOrderQueryUnknownTradState
-	}
-
-	// 以下全都是可选字段
-
-	resp.TransactionID = respXML["transaction_id"]
-	resp.OpenID = respXML["openid"]
-	resp.TradeType = ParseTradeType(respXML["trade_type"])
-	resp.BankType = respXML["bank_type"]
-	if respXML["time_end"] != "" {
-		resp.TimeEnd, err = time.Parse(DatetimeLayout, respXML["time_end"])
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if respXML["total_fee"] != "" {
-		resp.TotalFee, err = strconv.ParseUint(respXML["total_fee"], 10, 32)
-		if err != nil {
-			return nil, err
-		}
-	}
-	if respXML["cash_fee"] != "" {
-		resp.CashFee, err = strconv.ParseUint(respXML["cash_fee"], 10, 32)
-		if err != nil {
-			return nil, err
-		}
-	}
-	resp.FeeType = respXML["fee_type"]
-	resp.CashFeeType = respXML["cash_fee_type"]
-	if respXML["rate"] != "" {
-		resp.Rate, err = strconv.ParseUint(respXML["rate"], 10, 64)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	resp.DeviceInfo = respXML["device_info"]
-	resp.TradeStateDesc = respXML["trade_state_desc"]
-	resp.IsSubscribe = respXML["is_subscribe"]
-	resp.Attach = respXML["attach"]
-
-	return resp, nil
-
-}
-
 // OrderQuery 查询订单接口
 func OrderQuery(ctx context.Context, config Configuration, req *OrderQueryRequest, opts ...Option) (*OrderQueryResponse, error) {
 	options, err := NewOptions(opts...)
@@ -131,11 +76,78 @@ func OrderQuery(ctx context.Context, config Configuration, req *OrderQueryReques
 	}
 
 	// respXML -> resp
-	resp, err := newOrderQueryResponse(respXML)
-	if err != nil {
-		return nil, err
+	resp := &OrderQueryResponse{
+		MchXML: respXML,
 	}
 
+	resp.OutTradeNo = respXML["out_trade_no"]
+	resp.TradeState = ParseTradeState(respXML["trade_state"])
+	if !resp.TradeState.IsValid() {
+		return nil, ErrOrderQueryUnknownTradState
+	}
+
+	// 以下全都是可选字段
+
+	resp.TransactionID = respXML["transaction_id"]
+	resp.OpenID = respXML["openid"]
+	resp.TradeType = ParseTradeType(respXML["trade_type"])
+	resp.BankType = respXML["bank_type"]
+	if respXML["time_end"] != "" {
+		resp.TimeEnd, err = time.Parse(DatetimeLayout, respXML["time_end"])
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if respXML["total_fee"] != "" {
+		resp.TotalFee, err = strconv.ParseUint(respXML["total_fee"], 10, 64)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if respXML["cash_fee"] != "" {
+		resp.CashFee, err = strconv.ParseUint(respXML["cash_fee"], 10, 64)
+		if err != nil {
+			return nil, err
+		}
+	}
+	resp.FeeType = respXML["fee_type"]
+	resp.CashFeeType = respXML["cash_fee_type"]
+	if respXML["rate"] != "" {
+		resp.Rate, err = strconv.ParseUint(respXML["rate"], 10, 64)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	resp.DeviceInfo = respXML["device_info"]
+	resp.TradeStateDesc = respXML["trade_state_desc"]
+	resp.IsSubscribe = respXML["is_subscribe"]
+	resp.Attach = respXML["attach"]
+
 	return resp, nil
+
+}
+
+// OrderNotify 创建一个处理支付结果通知的 http.Handler
+func OrderNotify(handler func(context.Context, *OrderQueryResponse) error, selector ConfigurationSelector, opts ...Option) http.Handler {
+
+	return handleSignedMchXML(func(ctx context.Context, x MchXML) error {
+		// 这里再次发起查询有以下原因
+		// 1. 回调所带的参数虽然与查询接口返回的几乎一致，但依据文档显示回调里好像没有包含 trade_state，
+		//    再次发起查询能与主动查询保持一致
+		// 2. 回调虽然带有签名，但万一 key 泄漏则任何人都可以伪造；主动发起查询则能多一层防护
+		resp, err := OrderQuery(ctx, selector.Select(x["appid"], x["mch_id"]), &OrderQueryRequest{
+			TransactionID: x["transaction_id"],
+			OutTradeNo:    x["out_trade_no"],
+		}, opts...)
+		if err != nil {
+			return err
+		}
+
+		// 依据返回的结果执行 handler
+		return handler(ctx, resp)
+
+	}, selector)
 
 }
