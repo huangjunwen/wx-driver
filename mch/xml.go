@@ -34,9 +34,6 @@ type MchXML map[string]string
 
 // UnmarshalXML 实现 xml.Unmarshaler 接口
 func (x MchXML) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
-	if start.Name.Local != "xml" {
-		return fmt.Errorf("Expect <xml> as top element but got <%s>", start.Name.Local)
-	}
 	for {
 		t, err := d.Token()
 		if err != nil {

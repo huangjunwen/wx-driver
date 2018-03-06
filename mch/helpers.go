@@ -3,9 +3,12 @@ package mch
 import (
 	"bytes"
 	"context"
+	"crypto/aes"
 	"crypto/hmac"
 	"crypto/md5"
 	"crypto/sha256"
+	"encoding/base64"
+	"encoding/hex"
 	"encoding/xml"
 	"fmt"
 	"github.com/huangjunwen/wxdriver"
@@ -57,6 +60,60 @@ func signMchXML(x MchXML, signType SignType, key string) string {
 	// 需要大写
 	return fmt.Sprintf("%X", h.Sum(nil))
 
+}
+
+// decryptMchXML 解密一个加密了的 MchXML，目前主要用在退款结果通知，也许未来还有其它地方会用到
+func decryptMchXML(key string, cipherText string) (MchXML, error) {
+	// 对商户key做md5，得到32位小写key
+	keyMD5 := md5.Sum([]byte(key))
+	cipherKey := make([]byte, hex.EncodedLen(md5.Size))
+	hex.Encode(cipherKey, keyMD5[:])
+	cipherKey = bytes.ToLower(cipherKey)
+
+	// 由该 32 字节 cipherKey 创建 AES-256 cipher
+	cipher, err := aes.NewCipher(cipherKey)
+	if err != nil {
+		return nil, err
+	}
+	bs := cipher.BlockSize() // 16
+
+	// 用 base64 解码密文，密文长度应当 >0 且为 blocksize 整数倍
+	cipherBytes, err := base64.StdEncoding.DecodeString(cipherText)
+	if err != nil {
+		return nil, err
+	}
+	l := len(cipherBytes)
+	if l == 0 {
+		return nil, fmt.Errorf("Empty cipher text")
+	}
+	if l%bs != 0 {
+		return nil, fmt.Errorf("Cipher text length should be multiply of blocksize")
+	}
+
+	// ECB 解密
+	plainBytes := make([]byte, l)
+	src := cipherBytes
+	dst := plainBytes
+	for len(src) > 0 {
+		cipher.Decrypt(dst, src[:bs])
+		src = src[bs:]
+		dst = dst[bs:]
+	}
+
+	// pkcs#7 unpadding
+	p := int(plainBytes[l-1])
+	if p > bs {
+		return nil, fmt.Errorf("Padding byte bigger than block size")
+	}
+	plainBytes = plainBytes[:l-p]
+
+	// xml 解码
+	x := MchXML{}
+	if err := xml.Unmarshal(plainBytes, &x); err != nil {
+		return nil, err
+	}
+
+	return x, nil
 }
 
 // postMchXML 调用 mch xml 接口，大致过程如下：

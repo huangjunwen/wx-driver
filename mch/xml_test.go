@@ -15,7 +15,6 @@ func TestMchXMLUnmarshalXML(t *testing.T) {
 		ExpectResult map[string]string
 	}{
 		{"<xml></notxml>", false, nil},                                          // xml 错误
-		{"<notxml></notxml>", false, nil},                                       // 顶层元素错误
 		{"<xml></xml>", true, map[string]string{}},                              // 正确，没有字段
 		{"<xml><a>1</a><a>2</a></xml>", false, nil},                             // 重复字段
 		{"<xml><a></a></xml>", true, map[string]string{"a": ""}},                // 正确，空字段值
