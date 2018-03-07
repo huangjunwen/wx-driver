@@ -6,6 +6,9 @@ type TradeType struct{ v string }
 // TradeState 表示交易状态
 type TradeState struct{ v string }
 
+// RefundStatus 表示退款状态
+type RefundStatus struct{ v string }
+
 // SignType 代表签名类型
 type SignType struct{ v string }
 
@@ -50,6 +53,26 @@ func (ts TradeState) String() string {
 // IsValid 当该值有效(非空)时返回 true
 func (ts TradeState) IsValid() bool {
 	return ts.v != ""
+}
+
+// ParseRefundStatus parse 退款状态
+func ParseRefundStatus(v string) RefundStatus {
+	switch v {
+	case "PROCESSING", "SUCCESS", "REFUNDCLOSE", "CHANGE":
+		return RefundStatus{v}
+	default:
+		return RefundStatus{}
+	}
+}
+
+// String 实现 Stringer 接口
+func (rs RefundStatus) String() string {
+	return rs.v
+}
+
+// IsValid 当该值有效(非空)时返回 true
+func (rs RefundStatus) IsValid() bool {
+	return rs.v != ""
 }
 
 // ParseSignType parse 签名类型

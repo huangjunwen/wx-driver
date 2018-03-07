@@ -2,7 +2,7 @@
 //
 // 各接口一般形如：
 //
-//   X(ctx context.Context, config Configuration, req *XRequest, options ...Option) (resp *XResponse, err error)
+//   X(ctx context.Context, config Config, req *XRequest, options ...Option) (resp *XResponse, err error)
 //
 // 其中 X 是接口名称，各参数说明如下：
 //

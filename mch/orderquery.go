@@ -9,14 +9,15 @@ import (
 )
 
 var (
-	ErrOrderQueryMissingID        = errors.New("Missing transaction_id or out_trade_no in OrderQueryRequest")
+	ErrOrderQueryMissingID        = errors.New("Missing transaction_id/out_trade_no in OrderQueryRequest")
 	ErrOrderQueryUnknownTradType  = errors.New("Unknwon trade_type in OrderQueryResponse")
 	ErrOrderQueryUnknownTradState = errors.New("Unknwon trade_state in OrderQueryResponse")
 )
 
 // OrderQueryRequest 为查询订单接口请求
 type OrderQueryRequest struct {
-	// ----- 以下二选一 -----
+	// ----- 必填字段 -----
+	// 以下二选一
 	TransactionID string // transaction_id String(32) 微信支付订单号 建议优先使用
 	OutTradeNo    string // out_trade_no String(32) 商户系统内部订单号 同一个商户号下唯一
 }

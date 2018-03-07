@@ -51,6 +51,19 @@ var (
 )
 
 var (
+	// RefundStatusInvalid 表示无效退款状态
+	RefundStatusInvalid = RefundStatus{""}
+	// RefundStatusPROCESSING 表示退款处理中
+	RefundStatusPROCESSING = RefundStatus{"PROCESSING"}
+	// RefundStatusPROCESSING 表示退款成功；PROCESSING -> SUCCESS
+	RefundStatusSUCCESS = RefundStatus{"SUCCESS"}
+	// RefundStatusREFUNDCLOSE 表示退款关闭；PROCESSING -> REFUNDCLOSE
+	RefundStatusREFUNDCLOSE = RefundStatus{"REFUNDCLOSE"}
+	// RefundStatusCHANGE 表示退款异常，需要手动处理；PROCESSING -> CHANGE
+	RefundStatusCHANGE = RefundStatus{"CHANGE"}
+)
+
+var (
 	SignTypeInvalid    = SignType{""}
 	SignTypeMD5        = SignType{"MD5"}
 	SignTypeHMACSHA256 = SignType{"HMAC-SHA256"}
