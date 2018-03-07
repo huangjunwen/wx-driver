@@ -52,7 +52,7 @@ type OrderQueryResponse struct {
 	Attach         string // attach String(127) 附加数据
 }
 
-func orderQuery(ctx context.Context, config Configuration, req *OrderQueryRequest, opts []Option) (*OrderQueryResponse, error) {
+func orderQuery(ctx context.Context, config Config, req *OrderQueryRequest, opts []Option) (*OrderQueryResponse, error) {
 	// req -> reqXML
 	reqXML := MchXML{}
 	if req.TransactionID != "" {
@@ -124,14 +124,14 @@ func orderQuery(ctx context.Context, config Configuration, req *OrderQueryReques
 }
 
 // OrderQuery 查询订单接口
-func OrderQuery(ctx context.Context, config Configuration, req *OrderQueryRequest, opts ...Option) (*OrderQueryResponse, error) {
+func OrderQuery(ctx context.Context, config Config, req *OrderQueryRequest, opts ...Option) (*OrderQueryResponse, error) {
 	return orderQuery(ctx, config, req, opts)
 }
 
 // OrderNotify 创建一个处理支付结果通知的 http.Handler
 //
 // NOTE：请使用与在统一下单一样的 options, 否则例如统一下单使用了 HMAC-SHA256 签名，而这里没有，则验证签名有可能会不通过
-func OrderNotify(handler func(context.Context, *OrderQueryResponse) error, selector ConfigurationSelector, opts ...Option) http.Handler {
+func OrderNotify(handler func(context.Context, *OrderQueryResponse) error, selector ConfigSelector, opts ...Option) http.Handler {
 
 	return handleSignedMchXML(func(ctx context.Context, x MchXML) error {
 		// 这里再次发起查询有以下原因

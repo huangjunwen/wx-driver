@@ -65,7 +65,7 @@ type UnifiedOrderResponse struct {
 }
 
 // UnifiedOrder 统一下单接口
-func UnifiedOrder(ctx context.Context, config Configuration, req *UnifiedOrderRequest, opts ...Option) (*UnifiedOrderResponse, error) {
+func UnifiedOrder(ctx context.Context, config Config, req *UnifiedOrderRequest, opts ...Option) (*UnifiedOrderResponse, error) {
 	// req -> reqXML
 	reqXML := MchXML{}
 	if req.OutTradeNo == "" {

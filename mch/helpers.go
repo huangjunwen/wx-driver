@@ -19,12 +19,12 @@ import (
 
 // signMchXML 对 MchXML 进行签名，签名算法见微信支付《安全规范》，signType 为空时默认使用 MD5，
 // x 中 sign 字段和空值字段皆不参与签名
-func signMchXML(x MchXML, signType SignType, key string) string {
+func signMchXML(x MchXML, signType SignType, mchKey string) string {
 	// 选择 hash
 	var h hash.Hash
 	switch signType {
 	case SignTypeHMACSHA256:
-		h = hmac.New(sha256.New, []byte(key))
+		h = hmac.New(sha256.New, []byte(mchKey))
 	default:
 		h = md5.New()
 	}
@@ -55,7 +55,7 @@ func signMchXML(x MchXML, signType SignType, key string) string {
 		h.Write([]byte("&"))
 	}
 	h.Write([]byte("key="))
-	h.Write([]byte(key))
+	h.Write([]byte(mchKey))
 
 	// 需要大写
 	return fmt.Sprintf("%X", h.Sum(nil))
@@ -63,9 +63,9 @@ func signMchXML(x MchXML, signType SignType, key string) string {
 }
 
 // decryptMchXML 解密一个加密了的 MchXML，目前主要用在退款结果通知，也许未来还有其它地方会用到
-func decryptMchXML(key string, cipherText string) (MchXML, error) {
+func decryptMchXML(mchKey string, cipherText string) (MchXML, error) {
 	// 对商户key做md5，得到32位小写key
-	keyMD5 := md5.Sum([]byte(key))
+	keyMD5 := md5.Sum([]byte(mchKey))
 	cipherKey := make([]byte, hex.EncodedLen(md5.Size))
 	hex.Encode(cipherKey, keyMD5[:])
 	cipherKey = bytes.ToLower(cipherKey)
@@ -126,7 +126,7 @@ func decryptMchXML(key string, cipherText string) (MchXML, error) {
 //   - 验证 appid/mch_id
 //   - 检查 result_code
 //
-func postMchXML(ctx context.Context, config Configuration, path string, reqXML MchXML, opts []Option) (MchXML, error) {
+func postMchXML(ctx context.Context, config Config, path string, reqXML MchXML, opts []Option) (MchXML, error) {
 	options, err := newOptions(opts)
 	if err != nil {
 		return nil, err
@@ -137,12 +137,12 @@ func postMchXML(ctx context.Context, config Configuration, path string, reqXML M
 
 	// 添加公共字段
 	reqXML["appid"] = config.WechatAppID()
-	reqXML["mch_id"] = config.WechatPayMchID()
+	reqXML["mch_id"] = config.WechatMchID()
 	reqXML["sign_type"] = signType.String()
 	reqXML["nonce_str"] = wxdriver.NonceStr(16) // 32 位以内
 
 	// 签名
-	reqXML["sign"] = signMchXML(reqXML, signType, config.WechatPayKey())
+	reqXML["sign"] = signMchXML(reqXML, signType, config.WechatMchKey())
 
 	// 编码
 	reqBody, err := xml.Marshal(reqXML)
@@ -175,7 +175,7 @@ func postMchXML(ctx context.Context, config Configuration, path string, reqXML M
 	}
 
 	// 验证签名
-	sign := signMchXML(respXML, signType, config.WechatPayKey())
+	sign := signMchXML(respXML, signType, config.WechatMchKey())
 	suppliedSign := respXML["sign"]
 	if suppliedSign == "" || suppliedSign != sign {
 		return nil, fmt.Errorf("Response <sign> expect %+q but got %+q", sign, suppliedSign)
@@ -187,8 +187,8 @@ func postMchXML(ctx context.Context, config Configuration, path string, reqXML M
 	if appID != "" && appID != config.WechatAppID() {
 		return nil, fmt.Errorf("Response <appid> expect %+q but got %+q", config.WechatAppID(), appID)
 	}
-	if mchID != "" && mchID != config.WechatPayMchID() {
-		return nil, fmt.Errorf("Response <mch_id> expect %+q but got %+q", config.WechatPayMchID(), mchID)
+	if mchID != "" && mchID != config.WechatMchID() {
+		return nil, fmt.Errorf("Response <mch_id> expect %+q but got %+q", config.WechatMchID(), mchID)
 	}
 
 	// 检查业务标识 result_code
@@ -243,7 +243,7 @@ func handleMchXML(handler func(context.Context, MchXML) error) http.Handler {
 }
 
 // handleSignedMchXML 处理带签名的 mch xml 回调，需要传入一个 ConfigurationSelector 用于选择配置
-func handleSignedMchXML(handler func(context.Context, MchXML) error, selector ConfigurationSelector, opts []Option) http.Handler {
+func handleSignedMchXML(handler func(context.Context, MchXML) error, selector ConfigSelector, opts []Option) http.Handler {
 	options := mustOptions(opts)
 
 	return handleMchXML(func(ctx context.Context, reqXML MchXML) error {
@@ -266,7 +266,7 @@ func handleSignedMchXML(handler func(context.Context, MchXML) error, selector Co
 		}
 
 		// 验证签名
-		sign := signMchXML(reqXML, signType, config.WechatPayKey())
+		sign := signMchXML(reqXML, signType, config.WechatMchKey())
 		suppliedSign := reqXML["sign"]
 		if suppliedSign == "" || suppliedSign != sign {
 			return fmt.Errorf("Sign error")
