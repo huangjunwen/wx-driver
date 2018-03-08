@@ -11,7 +11,7 @@ import (
 	"encoding/hex"
 	"encoding/xml"
 	"fmt"
-	"github.com/huangjunwen/wxdriver"
+	"github.com/huangjunwen/wxdriver/utils"
 	"hash"
 	"net/http"
 	"sort"
@@ -139,7 +139,7 @@ func postMchXML(ctx context.Context, config Config, path string, reqXML MchXML, 
 	reqXML["appid"] = config.WechatAppID()
 	reqXML["mch_id"] = config.WechatMchID()
 	reqXML["sign_type"] = signType.String()
-	reqXML["nonce_str"] = wxdriver.NonceStr(16) // 32 位以内
+	reqXML["nonce_str"] = utils.NonceStr(16) // 32 位以内
 
 	// 签名
 	reqXML["sign"] = signMchXML(reqXML, signType, config.WechatMchKey())

@@ -1,7 +1,7 @@
 package mch
 
 import (
-	"github.com/huangjunwen/wxdriver"
+	"github.com/huangjunwen/wxdriver/utils"
 	"net/http"
 	"net/url"
 )
@@ -17,7 +17,7 @@ var (
 // Options 包含调用微信支付接口时的选项，NOTE: 某些选项未必对所有接口都有意义
 type Options struct {
 	// http 客户端
-	client wxdriver.HTTPClient
+	client utils.HTTPClient
 
 	// 地址前缀
 	urlBase string
@@ -63,18 +63,18 @@ func MustOptions(opts ...Option) *Options {
 	return mustOptions(opts)
 }
 
-// Client 返回 HTTPClient，依次：options.client > DefaultOptions.client > wxdriver.DefaultHTTPClient > http.DefaultClient
+// Client 返回 HTTPClient，依次：options.client > DefaultOptions.client > utils.DefaultHTTPClient > http.DefaultClient
 //
 // NOTE: 即使 options 为 nil 指针该方法仍能有效返回
-func (options *Options) Client() wxdriver.HTTPClient {
+func (options *Options) Client() utils.HTTPClient {
 	if options != nil && options.client != nil {
 		return options.client
 	}
 	if DefaultOptions != nil && DefaultOptions.client != nil {
 		return DefaultOptions.client
 	}
-	if wxdriver.DefaultHTTPClient != nil {
-		return wxdriver.DefaultHTTPClient
+	if utils.DefaultHTTPClient != nil {
+		return utils.DefaultHTTPClient
 	}
 	return http.DefaultClient
 }
@@ -106,7 +106,7 @@ func (options *Options) SignType() SignType {
 }
 
 // UseClient 设置 HTTPClient
-func UseClient(client wxdriver.HTTPClient) Option {
+func UseClient(client utils.HTTPClient) Option {
 	return func(options *Options) error {
 		options.client = client
 		return nil
