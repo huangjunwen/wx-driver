@@ -9,15 +9,6 @@ const (
 	URLBaseUS = "https://apius.mch.weixin.qq.com"
 )
 
-const (
-	DatetimeLayout = "20060102150405"
-)
-
-var (
-	VersionDefault = Version{""}
-	Version1       = Version{"1.0"}
-)
-
 var (
 	// TradeTypeInvalid 表示无效交易类型
 	TradeTypeInvalid = TradeType{""}

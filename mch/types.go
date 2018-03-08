@@ -12,9 +12,6 @@ type RefundStatus struct{ v string }
 // SignType 代表签名类型
 type SignType struct{ v string }
 
-// Version 代表 API 版本号，TODO: 接口加上 Version 逻辑
-type Version struct{ v string }
-
 // ParseTradeType parse 交易类型字符串
 func ParseTradeType(v string) TradeType {
 	switch v {
@@ -93,9 +90,4 @@ func (st SignType) String() string {
 // IsValid 当该值有效(非空)时返回 true
 func (st SignType) IsValid() bool {
 	return st.v != ""
-}
-
-// String 实现 Stringer 接口
-func (v Version) String() string {
-	return v.v
 }

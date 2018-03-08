@@ -3,8 +3,6 @@ package mch
 import (
 	"context"
 	"errors"
-	"fmt"
-	"strconv"
 	"time"
 )
 
@@ -17,6 +15,10 @@ var (
 	ErrUnifiedOrderMissingTradeType      = errors.New("Missing trade_type in UnifiedOrderRequest")
 	ErrUnifiedOrderMissingOpenID         = errors.New("Missing openid in UnifiedOrderRequest since trade_type is JSAPI")
 	ErrUnifiedOrderMissingProductID      = errors.New("Missing product_id in UnifiedOrderRequest since trade_type is NATIVE")
+	ErrUnifiedOrderBadTradeType          = errors.New("Bad trade_type is returned from UnifiedOrderResponse")
+	ErrUnifiedOrderNoPrepayID            = errors.New("No prepay_id is returned from UnifiedOrderResponse")
+	ErrUnifiedOrderNoCodeUrl             = errors.New("No code_url is returned from UnifiedOrderResponse")
+	ErrUnifiedOrderNoMWebUrl             = errors.New("No mweb_url is returned from UnifiedOrderResponse")
 )
 
 // UnifiedOrderRequest 为统一下单接口请求
@@ -30,10 +32,10 @@ type UnifiedOrderRequest struct {
 	TradeType      TradeType // trade_type String(16) 交易类型
 
 	// ----- 特定条件必填字段 -----
-	OpenID    string // openid String(128) 用户标识 trade_type 为 JSAPI 时必填
-	ProductID string // product_id String(32) 商户自定义商品 ID trade_type 为 NATIVE 时必传
+	OpenID string // openid String(128) 用户标识 trade_type 为 JSAPI 时必填
 
 	// ----- 选填字段 -----
+	ProductID  string    // product_id String(32) 商户自定义商品 ID trade_type 为 NATIVE 时必传
 	DeviceInfo string    // device_info String(32) 设备号
 	Detail     string    // detail String(6000) 商品详情
 	Attach     string    // attach String(127) 附加数据
@@ -55,11 +57,11 @@ type UnifiedOrderResponse struct {
 	TradeType TradeType // trade_type String(16) 交易类型
 	PrepayID  string    // prepay_id String(64) 预支付交易会话标识
 
-	// ----- 特定条件下返回字段 -----
+	// ----- 特定条件返回字段 -----
 	CodeUrl string // code_url String(64) 二维码链接 trade_type 为 NATIVE 时有返回
 	MWebUrl string // mweb_url String(64) 支付跳转链接 trade_type 为 MWEB 时有返回 可通过访问该url来拉起微信客户端
 
-	// ----- 其它字段 -----
+	// ----- 其它字段
 	DeviceInfo string // device_info String(32) 设备号
 
 }
@@ -71,76 +73,72 @@ func UnifiedOrder(ctx context.Context, config Config, req *UnifiedOrderRequest, 
 	if req.OutTradeNo == "" {
 		return nil, ErrUnifiedOrderMissingOutTradeNo
 	} else {
-		reqXML["out_trade_no"] = req.OutTradeNo
+		reqXML.fillString(req.OutTradeNo, "out_trade_no")
 	}
 
 	if req.TotalFee == 0 {
 		return nil, ErrUnifiedOrderMissingTotalFee
 	} else {
-		reqXML["total_fee"] = strconv.FormatUint(req.TotalFee, 10)
+		reqXML.fillUint64(req.TotalFee, "total_fee")
 	}
 
 	if req.Body == "" {
 		return nil, ErrUnifiedOrderMissingBody
 	} else {
-		reqXML["body"] = req.Body
+		reqXML.fillString(req.Body, "body")
 	}
 
 	if req.SpbillCreateIp == "" {
 		return nil, ErrUnifiedOrderMissingSpbillCreateIp
 	} else {
-		reqXML["spbill_create_ip"] = req.SpbillCreateIp
+		reqXML.fillString(req.SpbillCreateIp, "spbill_create_ip")
 	}
 
 	if req.NotifyUrl == "" {
 		return nil, ErrUnifiedOrderMissingNotifyUrl
 	} else {
-		reqXML["notify_url"] = req.NotifyUrl
+		reqXML.fillString(req.NotifyUrl, "notify_url")
 	}
 
 	if !req.TradeType.IsValid() {
 		return nil, ErrUnifiedOrderMissingTradeType
 	} else {
-		reqXML["trade_type"] = req.TradeType.String()
+		reqXML.fillStringer(req.TradeType, "trade_type")
 	}
 
 	if req.TradeType == TradeTypeJSAPI && req.OpenID == "" {
 		return nil, ErrUnifiedOrderMissingOpenID
 	}
 	if req.OpenID != "" {
-		reqXML["openid"] = req.OpenID
+		reqXML.fillString(req.OpenID, "openid")
 	}
 
-	if req.TradeType == TradeTypeNATIVE && req.ProductID == "" {
-		return nil, ErrUnifiedOrderMissingProductID
-	}
 	if req.ProductID != "" {
-		reqXML["product_id"] = req.ProductID
+		reqXML.fillString(req.ProductID, "product_id")
 	}
-
 	if req.DeviceInfo != "" {
-		reqXML["device_info"] = req.DeviceInfo
+		reqXML.fillString(req.DeviceInfo, "device_info")
 	}
 	if req.Detail != "" {
-		reqXML["detail"] = req.Detail
+		reqXML.fillString(req.Detail, "detail")
 	}
 	if req.Attach != "" {
-		reqXML["attach"] = req.Attach
+		reqXML.fillString(req.Attach, "attach")
 	}
 	if req.FeeType != "" {
-		reqXML["fee_type"] = req.FeeType
+		reqXML.fillString(req.FeeType, "fee_type")
 	}
 	if !req.TimeStart.IsZero() {
-		reqXML["time_start"] = req.TimeStart.Format(DatetimeLayout)
+		reqXML.fillTimeCompact(req.TimeStart, "time_start")
 	}
 	if !req.TimeExpire.IsZero() {
-		reqXML["time_expire"] = req.TimeExpire.Format(DatetimeLayout)
+		reqXML.fillTimeCompact(req.TimeExpire, "time_expire")
 	}
 	if req.GoodsTag != "" {
-		reqXML["goods_tag"] = req.GoodsTag
+		reqXML.fillString(req.GoodsTag, "goods_tag")
 	}
 	if req.LimitPay != "" {
-		reqXML["limit_pay"] = req.LimitPay
+		reqXML.fillString(req.LimitPay, "limit_pay")
 	}
 
 	// reqXML -> respXML
@@ -153,14 +151,28 @@ func UnifiedOrder(ctx context.Context, config Config, req *UnifiedOrderRequest, 
 	resp := UnifiedOrderResponse{
 		MchXML: respXML,
 	}
-	resp.TradeType = ParseTradeType(respXML["trade_type"])
-	if !resp.TradeType.IsValid() {
-		return nil, fmt.Errorf("Unknwon trade type %+q", respXML["trade_type"])
+	respXML.extractTradeType(&resp.TradeType, "trade_type", &err)
+	respXML.extractString(&resp.PrepayID, "prepay_id", &err)
+	respXML.extractString(&resp.CodeUrl, "code_url", &err)
+	respXML.extractString(&resp.MWebUrl, "mweb_url", &err)
+	respXML.extractString(&resp.DeviceInfo, "device_info", &err)
+	if err != nil {
+		return nil, err
 	}
-	resp.PrepayID = respXML["prepay_id"]
-	resp.CodeUrl = respXML["code_url"]
-	resp.MWebUrl = respXML["mweb_url"]
-	resp.DeviceInfo = respXML["device_info"]
+
+	// 检查 resp
+	if !resp.TradeType.IsValid() || req.TradeType != resp.TradeType {
+		return nil, ErrUnifiedOrderBadTradeType
+	}
+	if resp.PrepayID == "" {
+		return nil, ErrUnifiedOrderNoPrepayID
+	}
+	if resp.TradeType == TradeTypeNATIVE && resp.CodeUrl == "" {
+		return nil, ErrUnifiedOrderNoCodeUrl
+	}
+	if resp.TradeType == TradeTypeMWEB && resp.MWebUrl == "" {
+		return nil, ErrUnifiedOrderNoMWebUrl
+	}
 
 	return &resp, nil
 
