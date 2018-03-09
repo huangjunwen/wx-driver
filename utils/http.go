@@ -1,8 +1,6 @@
 package utils
 
 import (
-	"crypto/tls"
-	"crypto/x509"
 	"net/http"
 	"time"
 )
@@ -19,31 +17,4 @@ var (
 type HTTPClient interface {
 	// Do 发送请求，等待响应或错误；实现的行为应当与 http.Client.Do 一致
 	Do(req *http.Request) (*http.Response, error)
-}
-
-// NewHTTPSClient 以客户端 ssl 证书和密钥创建一个 https client，caPEMBlock 如果非空，
-// 则以之为 ca，否则使用 host 本身的 ca
-func NewHTTPSClient(certPEMBlock, keyPEMBlock, caPEMBlock []byte) (*http.Client, error) {
-	// 创建证书
-	cert, err := tls.X509KeyPair(certPEMBlock, keyPEMBlock)
-	if err != nil {
-		return nil, err
-	}
-
-	// 如果有 ca 提供，否则使用 host 本身的 ca
-	var caCertPool *x509.CertPool
-	if len(caPEMBlock) != 0 {
-		caCertPool = x509.NewCertPool()
-		caCertPool.AppendCertsFromPEM(caPEMBlock)
-	}
-
-	return &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				Certificates: []tls.Certificate{cert},
-				RootCAs:      caCertPool,
-			},
-		},
-	}, nil
-
 }
