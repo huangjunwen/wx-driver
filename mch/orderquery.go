@@ -130,7 +130,6 @@ func orderQuery(ctx context.Context, config Config, req *OrderQueryRequest, opts
 			return nil, ErrOrderQueryNoTotalFee
 		}
 		if resp.CashFee == 0 {
-			// TODO: cash_fee 有可能为 0
 			if respXML["cash_fee"] == "" {
 				return nil, ErrOrderQueryNoCashFee
 			}
