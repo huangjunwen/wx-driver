@@ -43,12 +43,12 @@ type OrderQueryResponse struct {
 	TradeType     TradeType // trade_type String(16) 交易类型
 	BankType      string    // bank_type String(16) 付款银行
 	TimeEnd       time.Time // time_end String(14) 订单支付时间
-	TotalFee      uint64    // total_fee Int 标价金额 单位为分
-	CashFee       uint64    // cash_fee Int 现金支付金额 cash_fee <= total_fee 当有立减/折扣/代金券等时部分金额抵扣
+	TotalFee      uint64    // total_fee Int 标价金额
+	CashFee       uint64    // cash_fee Int 现金支付金额
 
 	// ----- 支付完成后可能返回的字段 -----
-	FeeType     string // fee_type String(16) 标价币种，默认 CNY
-	CashFeeType string // cash_fee_type String(16) 现金支付币种，默认 CNY，境外支付时该值可能跟 fee_type 不一致
+	FeeType     string // fee_type String(16) 标价币种
+	CashFeeType string // cash_fee_type String(16) 现金支付币种
 	Rate        uint64 // rate String(16) 汇率 标价币种与支付币种兑换比例乘以10^8
 	// TODO: 优惠金额字段
 	// TODO: 这里涉及不同 Version 时返回的字段不一样，应当用统一的结构存储
@@ -130,7 +130,10 @@ func orderQuery(ctx context.Context, config Config, req *OrderQueryRequest, opts
 			return nil, ErrOrderQueryNoTotalFee
 		}
 		if resp.CashFee == 0 {
-			return nil, ErrOrderQueryNoCashFee
+			// TODO: cash_fee 有可能为 0
+			if respXML["cash_fee"] == "" {
+				return nil, ErrOrderQueryNoCashFee
+			}
 		}
 	}
 

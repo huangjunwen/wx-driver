@@ -13,7 +13,6 @@ var (
 	ErrUnifiedOrderMissingNotifyUrl  = errors.New("Missing notify_url in UnifiedOrderRequest")
 	ErrUnifiedOrderMissingTradeType  = errors.New("Missing trade_type in UnifiedOrderRequest")
 	ErrUnifiedOrderMissingOpenID     = errors.New("Missing openid in UnifiedOrderRequest since trade_type is JSAPI")
-	ErrUnifiedOrderMissingProductID  = errors.New("Missing product_id in UnifiedOrderRequest since trade_type is NATIVE")
 	ErrUnifiedOrderBadTradeType      = errors.New("Bad trade_type is returned from UnifiedOrderResponse")
 	ErrUnifiedOrderNoPrepayID        = errors.New("No prepay_id is returned from UnifiedOrderResponse")
 	ErrUnifiedOrderNoCodeUrl         = errors.New("No code_url is returned from UnifiedOrderResponse")
