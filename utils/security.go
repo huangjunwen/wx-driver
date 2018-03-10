@@ -47,3 +47,12 @@ func TLSConfig(certPEMBlock, keyPEMBlock, caPEMBlock []byte) (*tls.Config, error
 		RootCAs:      caCertPool,
 	}, nil
 }
+
+// MustTLSConfig 是 must 版 TLSConfig
+func MustTLSConfig(certPEMBlock, keyPEMBlock, caPEMBlock []byte) *tls.Config {
+	tlsConfig, err := TLSConfig(certPEMBlock, keyPEMBlock, caPEMBlock)
+	if err != nil {
+		panic(err)
+	}
+	return tlsConfig
+}
