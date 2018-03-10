@@ -64,6 +64,7 @@ type RefundResponse struct {
 	// TODO: 优惠金额字段
 }
 
+// Refund 申请退款接口，该接口需要客户端证书的 client
 func Refund(ctx context.Context, config Config, req *RefundRequest, opts ...Option) (*RefundResponse, error) {
 	// req -> reqXML
 	reqXML := MchXML{}
@@ -137,13 +138,15 @@ func Refund(ctx context.Context, config Config, req *RefundRequest, opts ...Opti
 	if resp.TotalFee == 0 {
 		return nil, ErrRefundNoTotalFee
 	}
+	if resp.RefundFee == 0 {
+		return nil, ErrRefundNoRefundFee
+	}
+	// CashFee/CashRefundFee 说不定可能为 0 （完全用优惠金支付），如果为 0，则需要额外检查 xml 是否
+	// 有该项返回，若有返回则则不报错
 	if resp.CashFee == 0 {
 		if respXML["cash_fee"] == "" {
 			return nil, ErrRefundNoCashFee
 		}
-	}
-	if resp.RefundFee == 0 {
-		return nil, ErrRefundNoRefundFee
 	}
 	if resp.CashRefundFee == 0 {
 		if respXML["cash_refund_fee"] == "" {

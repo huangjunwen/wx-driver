@@ -25,7 +25,7 @@ func NonceStr(n int) string {
 // 	}
 // 	client := &http.Client{
 // 		Transport: &http.Transport{
-// 			TLSConfig: tlsConfig,
+// 			TLSClientConfig: tlsConfig,
 // 		},
 // 	}
 func TLSConfig(certPEMBlock, keyPEMBlock, caPEMBlock []byte) (*tls.Config, error) {

@@ -129,6 +129,8 @@ func orderQuery(ctx context.Context, config Config, req *OrderQueryRequest, opts
 		if resp.TotalFee == 0 {
 			return nil, ErrOrderQueryNoTotalFee
 		}
+		// CashFee 说不定可能为 0 （完全用优惠金支付），如果为 0，则需要额外检查 xml 是否
+		// 有该项返回，若有返回则则不报错
 		if resp.CashFee == 0 {
 			if respXML["cash_fee"] == "" {
 				return nil, ErrOrderQueryNoCashFee
