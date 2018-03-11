@@ -14,10 +14,13 @@ var (
 	}
 )
 
-// Options 包含调用微信支付接口时的选项，NOTE: 某些选项未必对所有接口都有意义
+// Options 包含微信支付接口时的选项，NOTE: 某些选项未必对所有接口都有意义
 type Options struct {
 	// http 客户端
 	client utils.HTTPClient
+
+	// http 服务端中间件，用于回调接口
+	middleware func(http.Handler) http.Handler
 
 	// 地址前缀
 	urlBase string
@@ -79,6 +82,24 @@ func (options *Options) Client() utils.HTTPClient {
 	return http.DefaultClient
 }
 
+func noopMiddleware(h http.Handler) http.Handler {
+	return h
+}
+
+// Middleware 返回用于回调接口的服务端中间件，依次：options.middleware > DefaultOptions.middleware > noopMiddleware;
+// 该中间件会被安装到所有回调接口的最外层，应用可以使用它来实现诸如记录请求响应的功能
+//
+// NOTE: 即使 options 为 nil 指针该方法仍能有效返回
+func (options *Options) Middleware() func(http.Handler) http.Handler {
+	if options != nil && options.middleware != nil {
+		return options.middleware
+	}
+	if DefaultOptions != nil && DefaultOptions.middleware != nil {
+		return DefaultOptions.middleware
+	}
+	return noopMiddleware
+}
+
 // URLBase 返回 API 地址前缀，依次：options.urlBase > DefaultOptions.urlBase > "https://api.mch.weixin.qq.com"
 //
 // NOTE: 即使 options 为 nil 指针该方法仍能有效返回
@@ -109,6 +130,14 @@ func (options *Options) SignType() SignType {
 func UseClient(client utils.HTTPClient) Option {
 	return func(options *Options) error {
 		options.client = client
+		return nil
+	}
+}
+
+// UseMiddleware 设置中间件
+func UseMiddleware(middleware func(http.Handler) http.Handler) Option {
+	return func(options *Options) error {
+		options.middleware = middleware
 		return nil
 	}
 }
