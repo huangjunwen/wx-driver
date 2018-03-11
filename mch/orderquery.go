@@ -60,7 +60,7 @@ type OrderQueryResponse struct {
 	Attach         string // attach String(127) 附加数据
 }
 
-func orderQuery(ctx context.Context, config Config, req *OrderQueryRequest, opts []Option) (*OrderQueryResponse, error) {
+func orderQuery(ctx context.Context, config Config, req *OrderQueryRequest, options *Options) (*OrderQueryResponse, error) {
 	// req -> reqXML
 	reqXML := MchXML{}
 	if req.TransactionID != "" {
@@ -72,7 +72,7 @@ func orderQuery(ctx context.Context, config Config, req *OrderQueryRequest, opts
 	}
 
 	// reqXML -> respXML
-	respXML, err := postMchXML(ctx, config, "/pay/orderquery", reqXML, opts)
+	respXML, err := postMchXML(ctx, config, "/pay/orderquery", reqXML, options)
 	if err != nil {
 		return nil, err
 	}
@@ -143,13 +143,22 @@ func orderQuery(ctx context.Context, config Config, req *OrderQueryRequest, opts
 
 // OrderQuery 查询订单接口
 func OrderQuery(ctx context.Context, config Config, req *OrderQueryRequest, opts ...Option) (*OrderQueryResponse, error) {
-	return orderQuery(ctx, config, req, opts)
+	options, err := NewOptions(opts...)
+	if err != nil {
+		return nil, err
+	}
+	return orderQuery(ctx, config, req, options)
 }
 
 // OrderNotify 创建一个处理支付结果通知的 http.Handler
 //
 // NOTE：请使用与在统一下单一样的 options, 否则例如统一下单使用了 HMAC-SHA256 签名，而这里没有，则验证签名有可能会不通过
-func OrderNotify(handler func(context.Context, *OrderQueryResponse) error, selector ConfigSelector, opts ...Option) http.Handler {
+func OrderNotify(handler func(context.Context, *OrderQueryResponse, error) bool, selector ConfigSelector, opts ...Option) (http.Handler, error) {
+
+	options, err := NewOptions(opts...)
+	if err != nil {
+		return nil, err
+	}
 
 	return handleSignedMchXML(func(ctx context.Context, x MchXML) error {
 		// 这里再次发起查询有以下原因
@@ -159,11 +168,11 @@ func OrderNotify(handler func(context.Context, *OrderQueryResponse) error, selec
 		resp, err := orderQuery(ctx, selector.Select(x["appid"], x["mch_id"]), &OrderQueryRequest{
 			TransactionID: x["transaction_id"],
 			OutTradeNo:    x["out_trade_no"],
-		}, opts)
-		if err != nil {
-			return err
+		}, options)
+		if !handler(ctx, resp, err) {
+			return errors.New("")
 		}
-		return handler(ctx, resp)
-	}, selector, opts)
+		return nil
+	}, selector, options), nil
 
 }

@@ -65,7 +65,7 @@ type RefundInfo struct {
 	RefundSuccessTime time.Time // refund_success_time_$n String(20) 退款成功时间 (2016-07-25 15:26:26)
 }
 
-func refundQuery(ctx context.Context, config Config, req *RefundQueryRequest, opts []Option) (*RefundQueryResponse, error) {
+func refundQuery(ctx context.Context, config Config, req *RefundQueryRequest, options *Options) (*RefundQueryResponse, error) {
 	// req -> reqXML
 	reqXML := MchXML{}
 	if req.RefundID != "" {
@@ -85,7 +85,7 @@ func refundQuery(ctx context.Context, config Config, req *RefundQueryRequest, op
 	}
 
 	// reqXML -> respXML
-	respXML, err := postMchXML(ctx, config, "/pay/refundquery", reqXML, opts)
+	respXML, err := postMchXML(ctx, config, "/pay/refundquery", reqXML, options)
 	if err != nil {
 		return nil, err
 	}
@@ -161,32 +161,41 @@ func refundQuery(ctx context.Context, config Config, req *RefundQueryRequest, op
 
 // RefundQuery 查询退款
 func RefundQuery(ctx context.Context, config Config, req *RefundQueryRequest, opts ...Option) (*RefundQueryResponse, error) {
-	return refundQuery(ctx, config, req, opts)
+	options, err := NewOptions(opts...)
+	if err != nil {
+		return nil, err
+	}
+	return refundQuery(ctx, config, req, options)
 }
 
 // RefundNotify 创建一个处理退款结果通知的 http.Handler
-func RefundNotify(handler func(context.Context, *RefundQueryResponse) error, selector ConfigSelector, opts ...Option) http.Handler {
+func RefundNotify(handler func(context.Context, *RefundQueryResponse, error) bool, selector ConfigSelector, opts ...Option) (http.Handler, error) {
+
+	options, err := NewOptions(opts...)
+	if err != nil {
+		return nil, err
+	}
 
 	return handleMchXML(func(ctx context.Context, x MchXML) error {
 		config := selector.Select(x["appid"], x["mch_id"])
 		if config == nil {
-			return fmt.Errorf("Unknown app or mch")
+			return errors.New("Unknown app or mch")
 		}
 
 		x1, err := decryptMchXML(config.WechatMchKey(), x["req_info"])
 		if err != nil {
-			return err
+			return errors.New("Bad xml data")
 		}
 
 		// 这里再次发起查询，原因与 OrderNotify 一样
 		resp, err := refundQuery(ctx, config, &RefundQueryRequest{
 			RefundID: x1["refund_id"],
-		}, opts)
-		if err != nil {
-			return err
+		}, options)
+		if !handler(ctx, resp, err) {
+			return errors.New("")
 		}
-		return handler(ctx, resp)
+		return nil
 
-	})
+	}, options), nil
 
 }

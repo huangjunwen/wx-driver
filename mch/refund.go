@@ -66,6 +66,11 @@ type RefundResponse struct {
 
 // Refund 申请退款接口，该接口需要客户端证书的 client
 func Refund(ctx context.Context, config Config, req *RefundRequest, opts ...Option) (*RefundResponse, error) {
+	options, err := NewOptions(opts...)
+	if err != nil {
+		return nil, err
+	}
+
 	// req -> reqXML
 	reqXML := MchXML{}
 
@@ -96,7 +101,7 @@ func Refund(ctx context.Context, config Config, req *RefundRequest, opts ...Opti
 	}
 
 	// reqXML -> respXML
-	respXML, err := postMchXML(ctx, config, "/secapi/pay/refund", reqXML, opts)
+	respXML, err := postMchXML(ctx, config, "/secapi/pay/refund", reqXML, options)
 	if err != nil {
 		return nil, err
 	}

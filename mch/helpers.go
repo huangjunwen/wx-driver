@@ -126,11 +126,7 @@ func decryptMchXML(mchKey string, cipherText string) (MchXML, error) {
 //   - 验证 appid/mch_id
 //   - 检查 result_code
 //
-func postMchXML(ctx context.Context, config Config, path string, reqXML MchXML, opts []Option) (MchXML, error) {
-	options, err := newOptions(opts)
-	if err != nil {
-		return nil, err
-	}
+func postMchXML(ctx context.Context, config Config, path string, reqXML MchXML, options *Options) (MchXML, error) {
 	client := options.Client()
 	urlBase := options.URLBase()
 	signType := options.SignType()
@@ -202,9 +198,9 @@ func postMchXML(ctx context.Context, config Config, path string, reqXML MchXML, 
 }
 
 // handleMchXML 处理 mch xml 回调，若 handler 返回非 nil error，则该 http.Handler 返回 FAIL return_code 给微信
-func handleMchXML(handler func(context.Context, MchXML) error) http.Handler {
+func handleMchXML(handler func(context.Context, MchXML) error, options *Options) http.Handler {
 
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return options.Middleware()(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		writeResponse := func(success bool, msg string) {
 			respXML := MchXML{}
@@ -239,12 +235,11 @@ func handleMchXML(handler func(context.Context, MchXML) error) http.Handler {
 		}
 		writeResponse(true, "")
 
-	})
+	}))
 }
 
 // handleSignedMchXML 处理带签名的 mch xml 回调，需要传入一个 ConfigurationSelector 用于选择配置
-func handleSignedMchXML(handler func(context.Context, MchXML) error, selector ConfigSelector, opts []Option) http.Handler {
-	options := mustOptions(opts)
+func handleSignedMchXML(handler func(context.Context, MchXML) error, selector ConfigSelector, options *Options) http.Handler {
 
 	return handleMchXML(func(ctx context.Context, reqXML MchXML) error {
 		// 从 appid 和 mch_id 选择配置（多配置支持）
@@ -275,6 +270,6 @@ func handleSignedMchXML(handler func(context.Context, MchXML) error, selector Co
 		// 通过了，执行 handler
 		return handler(ctx, reqXML)
 
-	})
+	}, options)
 
 }
