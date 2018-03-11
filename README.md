@@ -1,3 +1,6 @@
-# wxdriver 微信“驱动” （或微信老司机）
+# wxdriver 微信 SDK （微信“驱动”）[![GoDoc](https://godoc.org/github.com/huangjunwen/wxdriver?status.svg)](https://godoc.org/github.com/huangjunwen/wxdriver)
 
 灵活易用的微信 sdk，持续开发中...
+
+- mch 微信支付
+- ...
