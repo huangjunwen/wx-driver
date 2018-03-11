@@ -168,13 +168,9 @@ func RefundQuery(ctx context.Context, config Config, req *RefundQueryRequest, op
 	return refundQuery(ctx, config, req, options)
 }
 
-// RefundNotify 创建一个处理退款结果通知的 http.Handler
-func RefundNotify(handler func(context.Context, *RefundQueryResponse, error) bool, selector ConfigSelector, opts ...Option) (http.Handler, error) {
-
-	options, err := NewOptions(opts...)
-	if err != nil {
-		return nil, err
-	}
+// RefundNotify 创建一个处理退款结果通知的 http.Handler; 传入 handler 的参数包括上下文和查询退款接口返回的 Response 和 error；handler
+// 处理过后若成功应该返回 nil，若失败则应该返回一个非 nil error 对象，该 error 的 String() 将会返回给外部
+func RefundNotify(handler func(context.Context, *RefundQueryResponse, error) error, selector ConfigSelector, options *Options) http.Handler {
 
 	return handleMchXML(func(ctx context.Context, x MchXML) error {
 		config := selector.Select(x["appid"], x["mch_id"])
@@ -191,11 +187,8 @@ func RefundNotify(handler func(context.Context, *RefundQueryResponse, error) boo
 		resp, err := refundQuery(ctx, config, &RefundQueryRequest{
 			RefundID: x1["refund_id"],
 		}, options)
-		if !handler(ctx, resp, err) {
-			return errors.New("")
-		}
-		return nil
+		return handler(ctx, resp, err)
 
-	}, options), nil
+	}, options)
 
 }

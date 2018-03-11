@@ -150,15 +150,11 @@ func OrderQuery(ctx context.Context, config Config, req *OrderQueryRequest, opts
 	return orderQuery(ctx, config, req, options)
 }
 
-// OrderNotify 创建一个处理支付结果通知的 http.Handler
+// OrderNotify 创建一个处理支付结果通知的 http.Handler; 传入 handler 的参数包括上下文和查询订单接口返回的 Response 和 error；handler
+// 处理过后若成功应该返回 nil，若失败则应该返回一个非 nil error 对象，该 error 的 String() 将会返回给外部
 //
 // NOTE：请使用与在统一下单一样的 options, 否则例如统一下单使用了 HMAC-SHA256 签名，而这里没有，则验证签名有可能会不通过
-func OrderNotify(handler func(context.Context, *OrderQueryResponse, error) bool, selector ConfigSelector, opts ...Option) (http.Handler, error) {
-
-	options, err := NewOptions(opts...)
-	if err != nil {
-		return nil, err
-	}
+func OrderNotify(handler func(context.Context, *OrderQueryResponse, error) error, selector ConfigSelector, options *Options) http.Handler {
 
 	return handleSignedMchXML(func(ctx context.Context, x MchXML) error {
 		// 这里再次发起查询有以下原因
@@ -169,10 +165,7 @@ func OrderNotify(handler func(context.Context, *OrderQueryResponse, error) bool,
 			TransactionID: x["transaction_id"],
 			OutTradeNo:    x["out_trade_no"],
 		}, options)
-		if !handler(ctx, resp, err) {
-			return errors.New("")
-		}
-		return nil
-	}, selector, options), nil
+		return handler(ctx, resp, err)
+	}, selector, options)
 
 }

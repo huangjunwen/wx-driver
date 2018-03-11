@@ -10,6 +10,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"github.com/huangjunwen/wxdriver/utils"
 	"hash"
@@ -245,7 +246,7 @@ func handleSignedMchXML(handler func(context.Context, MchXML) error, selector Co
 		// 从 appid 和 mch_id 选择配置（多配置支持）
 		config := selector.Select(reqXML["appid"], reqXML["mch_id"])
 		if config == nil {
-			return fmt.Errorf("Unknown app or mch")
+			return errors.New("Unknown app or mch")
 		}
 
 		// 选择签名类型：请求中的 sign_type > options 中的 SignType
@@ -253,7 +254,7 @@ func handleSignedMchXML(handler func(context.Context, MchXML) error, selector Co
 		if reqXML["sign_type"] != "" {
 			signType = ParseSignType(reqXML["sign_type"])
 			if !signType.IsValid() {
-				return fmt.Errorf("Unknown sign type")
+				return errors.New("Unknown sign type")
 			}
 		}
 		if !signType.IsValid() {
@@ -264,7 +265,7 @@ func handleSignedMchXML(handler func(context.Context, MchXML) error, selector Co
 		sign := signMchXML(reqXML, signType, config.WechatMchKey())
 		suppliedSign := reqXML["sign"]
 		if suppliedSign == "" || suppliedSign != sign {
-			return fmt.Errorf("Sign error")
+			return errors.New("Sign error")
 		}
 
 		// 通过了，执行 handler
