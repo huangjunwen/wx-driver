@@ -4,16 +4,36 @@
 //
 // 各接口一般形如：
 //
-//   X(ctx context.Context, config Config, req *XRequest, options ...Option) (resp *XResponse, err error)
+//   X(ctx context.Context, config Config, req *XRequest, opts ...Option) (resp *XResponse, err error)
 //
 // 其中 X 是接口名称，各参数说明如下：
 //
 //   ctx 上下文
 //   config 微信支付配置，此项是包含接口必须的参数，如应用 ID/商户 ID 等
 //   req 请求
-//   options 额外选项，如非默认的 http client，签名方式等
+//   opts 额外选项，如非默认的 http client，签名方式等
 //   resp 响应
 //   err 错误，只有当通讯成功且业务结果成功时，返回空 err
+//
+// ##### https ########################################################
+//
+// 有些接口（例如退款接口）需要客户端证书方可方可调用，最简便的方法是在 DefaultOptions
+// 中统一使用带客户端证书的 http client：
+//
+//  import (
+//  	"github.com/huangjunwen/wxdriver/mch"
+//  	"github.com/huangjunwen/wxdriver/utils"
+//  	"time"
+//  )
+//
+//  mch.DefaultOptions = mch.MustOptions(
+//  	mch.UseClient(&http.Client{
+//  		Transport: &http.Transport{
+//  			TLSClientConfig: utils.MustTLSConfig(certPEM, keyPEM, nil),
+//  		},
+//  		Timeout: 30 * time.Second,
+//  	}),
+//  )
 //
 // ##### 金额说明 ########################################################
 //
