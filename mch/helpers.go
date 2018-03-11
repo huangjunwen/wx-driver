@@ -12,6 +12,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"github.com/huangjunwen/wxdriver/conf"
 	"github.com/huangjunwen/wxdriver/utils"
 	"hash"
 	"net/http"
@@ -127,7 +128,7 @@ func decryptMchXML(mchKey string, cipherText string) (MchXML, error) {
 //   - 验证 appid/mch_id
 //   - 检查 result_code
 //
-func postMchXML(ctx context.Context, config Config, path string, reqXML MchXML, options *Options) (MchXML, error) {
+func postMchXML(ctx context.Context, config conf.MchConfig, path string, reqXML MchXML, options *Options) (MchXML, error) {
 	client := options.Client()
 	urlBase := options.URLBase()
 	signType := options.SignType()
@@ -240,11 +241,11 @@ func handleMchXML(handler func(context.Context, MchXML) error, options *Options)
 }
 
 // handleSignedMchXML 处理带签名的 mch xml 回调，需要传入一个 ConfigurationSelector 用于选择配置
-func handleSignedMchXML(handler func(context.Context, MchXML) error, selector ConfigSelector, options *Options) http.Handler {
+func handleSignedMchXML(handler func(context.Context, MchXML) error, selector conf.MchConfigSelector, options *Options) http.Handler {
 
 	return handleMchXML(func(ctx context.Context, reqXML MchXML) error {
 		// 从 appid 和 mch_id 选择配置（多配置支持）
-		config := selector.Select(reqXML["appid"], reqXML["mch_id"])
+		config := selector.SelectMch(reqXML["appid"], reqXML["mch_id"])
 		if config == nil {
 			return errors.New("Unknown app or mch")
 		}

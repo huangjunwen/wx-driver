@@ -3,6 +3,7 @@ package mch
 import (
 	"context"
 	"errors"
+	"github.com/huangjunwen/wxdriver/conf"
 	"net/http"
 	"time"
 )
@@ -60,7 +61,7 @@ type OrderQueryResponse struct {
 	Attach         string // attach String(127) 附加数据
 }
 
-func orderQuery(ctx context.Context, config Config, req *OrderQueryRequest, options *Options) (*OrderQueryResponse, error) {
+func orderQuery(ctx context.Context, config conf.MchConfig, req *OrderQueryRequest, options *Options) (*OrderQueryResponse, error) {
 	// req -> reqXML
 	reqXML := MchXML{}
 	if req.TransactionID != "" {
@@ -142,7 +143,7 @@ func orderQuery(ctx context.Context, config Config, req *OrderQueryRequest, opti
 }
 
 // OrderQuery 查询订单接口
-func OrderQuery(ctx context.Context, config Config, req *OrderQueryRequest, opts ...Option) (*OrderQueryResponse, error) {
+func OrderQuery(ctx context.Context, config conf.MchConfig, req *OrderQueryRequest, opts ...Option) (*OrderQueryResponse, error) {
 	options, err := NewOptions(opts...)
 	if err != nil {
 		return nil, err
@@ -154,14 +155,14 @@ func OrderQuery(ctx context.Context, config Config, req *OrderQueryRequest, opts
 // 处理过后若成功应该返回 nil，若失败则应该返回一个非 nil error 对象，该 error 的 String() 将会返回给外部
 //
 // NOTE：请使用与在统一下单一样的签名类型，否则签名会可能不通过
-func OrderNotify(handler func(context.Context, *OrderQueryResponse, error) error, selector ConfigSelector, options *Options) http.Handler {
+func OrderNotify(handler func(context.Context, *OrderQueryResponse, error) error, selector conf.MchConfigSelector, options *Options) http.Handler {
 
 	return handleSignedMchXML(func(ctx context.Context, x MchXML) error {
 		// 这里再次发起查询有以下原因
 		// 1. 回调所带的参数虽然与查询接口返回的几乎一致，但依据文档显示回调里好像没有包含 trade_state，
 		//    再次发起查询能与主动查询保持一致
 		// 2. 回调虽然带有签名，但万一 key 泄漏则任何人都可以伪造；主动发起查询则能多一层防护
-		resp, err := orderQuery(ctx, selector.Select(x["appid"], x["mch_id"]), &OrderQueryRequest{
+		resp, err := orderQuery(ctx, selector.SelectMch(x["appid"], x["mch_id"]), &OrderQueryRequest{
 			TransactionID: x["transaction_id"],
 			OutTradeNo:    x["out_trade_no"],
 		}, options)

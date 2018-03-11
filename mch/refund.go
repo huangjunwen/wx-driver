@@ -3,6 +3,7 @@ package mch
 import (
 	"context"
 	"errors"
+	"github.com/huangjunwen/wxdriver/conf"
 )
 
 var (
@@ -65,7 +66,7 @@ type RefundResponse struct {
 }
 
 // Refund 申请退款接口，该接口需要客户端证书的 client
-func Refund(ctx context.Context, config Config, req *RefundRequest, opts ...Option) (*RefundResponse, error) {
+func Refund(ctx context.Context, config conf.MchConfig, req *RefundRequest, opts ...Option) (*RefundResponse, error) {
 	options, err := NewOptions(opts...)
 	if err != nil {
 		return nil, err

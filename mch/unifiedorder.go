@@ -3,6 +3,7 @@ package mch
 import (
 	"context"
 	"errors"
+	"github.com/huangjunwen/wxdriver/conf"
 	"time"
 )
 
@@ -65,7 +66,7 @@ type UnifiedOrderResponse struct {
 }
 
 // UnifiedOrder 统一下单接口
-func UnifiedOrder(ctx context.Context, config Config, req *UnifiedOrderRequest, opts ...Option) (*UnifiedOrderResponse, error) {
+func UnifiedOrder(ctx context.Context, config conf.MchConfig, req *UnifiedOrderRequest, opts ...Option) (*UnifiedOrderResponse, error) {
 	options, err := NewOptions(opts...)
 	if err != nil {
 		return nil, err

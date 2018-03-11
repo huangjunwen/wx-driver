@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/huangjunwen/wxdriver/conf"
 	"net/http"
 	"time"
 )
@@ -65,7 +66,7 @@ type RefundInfo struct {
 	RefundSuccessTime time.Time // refund_success_time_$n String(20) 退款成功时间 (2016-07-25 15:26:26)
 }
 
-func refundQuery(ctx context.Context, config Config, req *RefundQueryRequest, options *Options) (*RefundQueryResponse, error) {
+func refundQuery(ctx context.Context, config conf.MchConfig, req *RefundQueryRequest, options *Options) (*RefundQueryResponse, error) {
 	// req -> reqXML
 	reqXML := MchXML{}
 	if req.RefundID != "" {
@@ -160,7 +161,7 @@ func refundQuery(ctx context.Context, config Config, req *RefundQueryRequest, op
 }
 
 // RefundQuery 查询退款
-func RefundQuery(ctx context.Context, config Config, req *RefundQueryRequest, opts ...Option) (*RefundQueryResponse, error) {
+func RefundQuery(ctx context.Context, config conf.MchConfig, req *RefundQueryRequest, opts ...Option) (*RefundQueryResponse, error) {
 	options, err := NewOptions(opts...)
 	if err != nil {
 		return nil, err
@@ -170,10 +171,10 @@ func RefundQuery(ctx context.Context, config Config, req *RefundQueryRequest, op
 
 // RefundNotify 创建一个处理退款结果通知的 http.Handler; 传入 handler 的参数包括上下文和查询退款接口返回的 Response 和 error；handler
 // 处理过后若成功应该返回 nil，若失败则应该返回一个非 nil error 对象，该 error 的 String() 将会返回给外部
-func RefundNotify(handler func(context.Context, *RefundQueryResponse, error) error, selector ConfigSelector, options *Options) http.Handler {
+func RefundNotify(handler func(context.Context, *RefundQueryResponse, error) error, selector conf.MchConfigSelector, options *Options) http.Handler {
 
 	return handleMchXML(func(ctx context.Context, x MchXML) error {
-		config := selector.Select(x["appid"], x["mch_id"])
+		config := selector.SelectMch(x["appid"], x["mch_id"])
 		if config == nil {
 			return errors.New("Unknown app or mch")
 		}
