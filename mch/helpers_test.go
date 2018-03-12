@@ -122,6 +122,11 @@ func TestHandleSignedMchXML(t *testing.T) {
 			"SUCCESS",
 			"",
 		}, // 使用微信支付接口签名校验工具计算的结果
+		{
+			"<xml><return_code>SUCCESS</return_code><appid>wxd930ea5d5a258f4f</appid><mch_id>10000100</mch_id><sign>4d70b2071e6998ef23f3415d7be3ac15</sign></xml>",
+			"FAIL",
+			"Sign error",
+		}, // 签名必须是小写
 	} {
 		resp, err := http.Post(ts.URL, "application/xml", bytes.NewBufferString(testCase.Data))
 		assert.NoError(err, "http.Post should have no error")

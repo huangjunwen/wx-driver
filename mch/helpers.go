@@ -20,7 +20,7 @@ import (
 )
 
 // signMchXML 对 MchXML 进行签名，签名算法见微信支付《安全规范》，signType 为空时默认使用 MD5，
-// x 中 sign 字段和空值字段皆不参与签名
+// x 中 sign 字段和空值字段皆不参与签名；返回的签名字符串为大写
 func signMchXML(x MchXML, signType SignType, mchKey string) string {
 	// 选择 hash
 	var h hash.Hash
