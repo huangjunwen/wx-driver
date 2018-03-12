@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"bytes"
+	"io/ioutil"
 	"net/http"
 	"time"
 )
@@ -17,4 +19,24 @@ var (
 type HTTPClient interface {
 	// Do 发送请求，等待响应或错误；实现的行为应当与 http.Client.Do 一致
 	Do(req *http.Request) (*http.Response, error)
+}
+
+// ReadAndReplaceRequestBody 读取 Request 全部 body 并将 body 替换成 bytes.Buffer
+func ReadAndReplaceRequestBody(req *http.Request) (reqBody []byte, err error) {
+	body, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		return nil, err
+	}
+	req.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+	return body, nil
+}
+
+// ReadAndReplaceResponseBody 读取 Response 全部 body 并将 body 替换成 bytes.Buffer
+func ReadAndReplaceResponseBody(resp *http.Response) (respBody []byte, err error) {
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	resp.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+	return body, nil
 }
