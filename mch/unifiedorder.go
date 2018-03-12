@@ -143,7 +143,7 @@ func UnifiedOrder(ctx context.Context, config conf.MchConfig, req *UnifiedOrderR
 	}
 
 	// reqXML -> respXML
-	respXML, err := postMchXML(ctx, config, "/pay/unifiedorder", reqXML, options)
+	respXML, err := PostMchXML(ctx, config, "/pay/unifiedorder", reqXML, options)
 	if err != nil {
 		return nil, err
 	}

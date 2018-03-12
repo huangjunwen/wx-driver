@@ -102,7 +102,7 @@ func Refund(ctx context.Context, config conf.MchConfig, req *RefundRequest, opts
 	}
 
 	// reqXML -> respXML
-	respXML, err := postMchXML(ctx, config, "/secapi/pay/refund", reqXML, options)
+	respXML, err := PostMchXML(ctx, config, "/secapi/pay/refund", reqXML, options)
 	if err != nil {
 		return nil, err
 	}

@@ -86,7 +86,7 @@ func refundQuery(ctx context.Context, config conf.MchConfig, req *RefundQueryReq
 	}
 
 	// reqXML -> respXML
-	respXML, err := postMchXML(ctx, config, "/pay/refundquery", reqXML, options)
+	respXML, err := PostMchXML(ctx, config, "/pay/refundquery", reqXML, options)
 	if err != nil {
 		return nil, err
 	}
@@ -173,13 +173,13 @@ func RefundQuery(ctx context.Context, config conf.MchConfig, req *RefundQueryReq
 // 处理过后若成功应该返回 nil，若失败则应该返回一个非 nil error 对象，该 error 的 String() 将会返回给外部
 func RefundNotify(handler func(context.Context, *RefundQueryResponse, error) error, selector conf.MchConfigSelector, options *Options) http.Handler {
 
-	return handleMchXML(func(ctx context.Context, x MchXML) error {
+	return HandleMchXML(func(ctx context.Context, x MchXML) error {
 		config := selector.SelectMch(x["appid"], x["mch_id"])
 		if config == nil {
 			return errors.New("Unknown app or mch")
 		}
 
-		x1, err := decryptMchXML(config.WechatMchKey(), x["req_info"])
+		x1, err := DecryptMchXML(config.WechatMchKey(), x["req_info"])
 		if err != nil {
 			return errors.New("Bad xml data")
 		}

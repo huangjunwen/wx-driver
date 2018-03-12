@@ -73,7 +73,7 @@ func orderQuery(ctx context.Context, config conf.MchConfig, req *OrderQueryReque
 	}
 
 	// reqXML -> respXML
-	respXML, err := postMchXML(ctx, config, "/pay/orderquery", reqXML, options)
+	respXML, err := PostMchXML(ctx, config, "/pay/orderquery", reqXML, options)
 	if err != nil {
 		return nil, err
 	}
@@ -157,7 +157,7 @@ func OrderQuery(ctx context.Context, config conf.MchConfig, req *OrderQueryReque
 // NOTE：请使用与在统一下单一样的签名类型，否则签名会可能不通过
 func OrderNotify(handler func(context.Context, *OrderQueryResponse, error) error, selector conf.MchConfigSelector, options *Options) http.Handler {
 
-	return handleSignedMchXML(func(ctx context.Context, x MchXML) error {
+	return HandleSignedMchXML(func(ctx context.Context, x MchXML) error {
 		// 这里再次发起查询有以下原因
 		// 1. 回调所带的参数虽然与查询接口返回的几乎一致，但依据文档显示回调里好像没有包含 trade_state，
 		//    再次发起查询能与主动查询保持一致

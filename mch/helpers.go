@@ -19,9 +19,11 @@ import (
 	"sort"
 )
 
-// signMchXML 对 MchXML 进行签名，签名算法见微信支付《安全规范》，signType 为空时默认使用 MD5，
+// SignMchXML 对 MchXML 进行签名，签名算法见微信支付《安全规范》，signType 为空时默认使用 MD5，
 // x 中 sign 字段和空值字段皆不参与签名；返回的签名字符串为大写
-func signMchXML(x MchXML, signType SignType, mchKey string) string {
+//
+// NOTE: 最终用户一般不需要使用该函数
+func SignMchXML(x MchXML, signType SignType, mchKey string) string {
 	// 选择 hash
 	var h hash.Hash
 	switch signType {
@@ -64,8 +66,10 @@ func signMchXML(x MchXML, signType SignType, mchKey string) string {
 
 }
 
-// decryptMchXML 解密一个加密了的 MchXML，目前主要用在退款结果通知，也许未来还有其它地方会用到
-func decryptMchXML(mchKey string, cipherText string) (MchXML, error) {
+// DecryptMchXML 解密一个加密了的 MchXML，目前主要用在退款结果通知，也许未来还有其它地方会用到
+//
+// NOTE: 最终用户一般不需要使用该函数
+func DecryptMchXML(mchKey string, cipherText string) (MchXML, error) {
 	// 对商户key做md5，得到32位小写key
 	keyMD5 := md5.Sum([]byte(mchKey))
 	cipherKey := make([]byte, hex.EncodedLen(md5.Size))
@@ -118,7 +122,7 @@ func decryptMchXML(mchKey string, cipherText string) (MchXML, error) {
 	return x, nil
 }
 
-// postMchXML 调用 mch xml 接口，大致过程如下：
+// PostMchXML 调用 mch xml 接口，大致过程如下：
 //
 //   - 添加公共字段 appid/mch_id/mch_id/nonce_str/sign_type
 //   - 签名并添加 sign
@@ -128,7 +132,8 @@ func decryptMchXML(mchKey string, cipherText string) (MchXML, error) {
 //   - 验证 appid/mch_id
 //   - 检查 result_code
 //
-func postMchXML(ctx context.Context, config conf.MchConfig, path string, reqXML MchXML, options *Options) (MchXML, error) {
+// NOTE: 最终用户一般不需要使用该函数
+func PostMchXML(ctx context.Context, config conf.MchConfig, path string, reqXML MchXML, options *Options) (MchXML, error) {
 	client := options.Client()
 	urlBase := options.URLBase()
 	signType := options.SignType()
@@ -140,7 +145,7 @@ func postMchXML(ctx context.Context, config conf.MchConfig, path string, reqXML 
 	reqXML["nonce_str"] = utils.NonceStr(16) // 32 位以内
 
 	// 签名
-	reqXML["sign"] = signMchXML(reqXML, signType, config.WechatMchKey())
+	reqXML["sign"] = SignMchXML(reqXML, signType, config.WechatMchKey())
 
 	// 编码
 	reqBody, err := xml.Marshal(reqXML)
@@ -173,7 +178,7 @@ func postMchXML(ctx context.Context, config conf.MchConfig, path string, reqXML 
 	}
 
 	// 验证签名
-	sign := signMchXML(respXML, signType, config.WechatMchKey())
+	sign := SignMchXML(respXML, signType, config.WechatMchKey())
 	suppliedSign := respXML["sign"]
 	if suppliedSign == "" || suppliedSign != sign {
 		return nil, fmt.Errorf("Response <sign> expect %+q but got %+q", sign, suppliedSign)
@@ -199,8 +204,10 @@ func postMchXML(ctx context.Context, config conf.MchConfig, path string, reqXML 
 
 }
 
-// handleMchXML 处理 mch xml 回调，若 handler 返回非 nil error，则该 http.Handler 返回 FAIL return_code 给微信
-func handleMchXML(handler func(context.Context, MchXML) error, options *Options) http.Handler {
+// HandleMchXML 处理 mch xml 回调，若 handler 返回非 nil error，则该 http.Handler 返回 FAIL return_code 给微信
+//
+// NOTE: 最终用户一般不需要使用该函数
+func HandleMchXML(handler func(context.Context, MchXML) error, options *Options) http.Handler {
 
 	return options.Middleware()(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
@@ -240,10 +247,12 @@ func handleMchXML(handler func(context.Context, MchXML) error, options *Options)
 	}))
 }
 
-// handleSignedMchXML 处理带签名的 mch xml 回调，需要传入一个 ConfigurationSelector 用于选择配置
-func handleSignedMchXML(handler func(context.Context, MchXML) error, selector conf.MchConfigSelector, options *Options) http.Handler {
+// HandleSignedMchXML 处理带签名的 mch xml 回调，需要传入一个 ConfigurationSelector 用于选择配置
+//
+// NOTE: 最终用户一般不需要使用该函数
+func HandleSignedMchXML(handler func(context.Context, MchXML) error, selector conf.MchConfigSelector, options *Options) http.Handler {
 
-	return handleMchXML(func(ctx context.Context, reqXML MchXML) error {
+	return HandleMchXML(func(ctx context.Context, reqXML MchXML) error {
 		// 从 appid 和 mch_id 选择配置（多配置支持）
 		config := selector.SelectMch(reqXML["appid"], reqXML["mch_id"])
 		if config == nil {
@@ -263,7 +272,7 @@ func handleSignedMchXML(handler func(context.Context, MchXML) error, selector co
 		}
 
 		// 验证签名
-		sign := signMchXML(reqXML, signType, config.WechatMchKey())
+		sign := SignMchXML(reqXML, signType, config.WechatMchKey())
 		suppliedSign := reqXML["sign"]
 		if suppliedSign == "" || suppliedSign != sign {
 			return errors.New("Sign error")
