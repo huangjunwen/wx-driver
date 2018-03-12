@@ -3,7 +3,6 @@ package mch
 import (
 	"encoding/xml"
 	"github.com/stretchr/testify/assert"
-	"log"
 	"testing"
 )
 
@@ -24,8 +23,6 @@ func TestMchXMLUnmarshalXML(t *testing.T) {
 
 		x := MchXML(make(map[string]string))
 		err := xml.Unmarshal([]byte(testCase.Src), &x)
-
-		log.Printf("xml=%#v err=%#v\n", x, err)
 
 		if testCase.ExpectOK {
 			assert.NoErrorf(err, "Expect has no error")
