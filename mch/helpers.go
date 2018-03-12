@@ -220,13 +220,13 @@ func handleMchXML(handler func(context.Context, MchXML) error, options *Options)
 		// 解码
 		reqXML := MchXML{}
 		if err := xml.NewDecoder(r.Body).Decode(&reqXML); err != nil {
-			writeResponse(false, "")
+			writeResponse(false, "Invalid xml")
 			return
 		}
 
 		// 检查通讯标识 return code，若失败了还回调 ??!
 		if reqXML["return_code"] != "SUCCESS" {
-			writeResponse(false, "")
+			writeResponse(false, "Failed return_code")
 			return
 		}
 
