@@ -67,7 +67,9 @@ One of "transaction_id"/"out_trade_no" is required
 			if err != nil {
 				log.Fatal(err)
 			}
-			dumpJSON(resp.MchXML)
+			dumpJSON(map[string]interface{}{
+				"raw": resp.MchXML,
+			})
 		},
 	}
 )
@@ -87,7 +89,9 @@ One of "transaction_id"/"out_trade_no"/"refund_id"/"out_refund_no" is required
 			if err != nil {
 				log.Fatal(err)
 			}
-			dumpJSON(resp.MchXML)
+			dumpJSON(map[string]interface{}{
+				"raw": resp.MchXML,
+			})
 		},
 	}
 )
