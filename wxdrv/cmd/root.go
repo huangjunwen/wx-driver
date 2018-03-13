@@ -48,7 +48,15 @@ var (
 var rootCmd = &cobra.Command{
 	Use:   "wxdrv",
 	Short: "Wechat API utilities",
-	Long:  ``,
+	Long: `
+Wechat API utilities
+
+Some flags have notation like "[xxx|yyy]", here is the meaning:
+
+  - "required": the flag is required
+  - "configurable": the flag can be set in config file
+
+`,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		return initHTTPClient()
 	},

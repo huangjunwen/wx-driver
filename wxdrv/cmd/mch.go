@@ -35,11 +35,12 @@ var (
 	mchConfig *conf.DefaultConfig
 	// mchCmd represents the mch command
 	mchCmd = &cobra.Command{
-		Use:   "mch",
-		Short: "Wechat payment API utilities",
-		Long:  ``,
+		Use:     "mch",
+		Aliases: []string{"pay"},
+		Short:   "Wechat payment API utilities",
+		Long:    ``,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			// BUG: 这里得手动调用 parent 得 PersistentPreRun，因为只会调用最接近叶节点得 PersistentPreRun
+			// BUG: 这里得手动调用 parent 的 PersistentPreRun，因为只会调用最接近叶节点的 PersistentPreRun
 			// 见 https://github.com/spf13/cobra/issues/252
 			if rootCmd.PersistentPreRunE != nil {
 				if err := rootCmd.PersistentPreRunE(cmd, args); err != nil {
