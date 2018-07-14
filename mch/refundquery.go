@@ -174,7 +174,10 @@ func RefundQuery(ctx context.Context, config conf.MchConfig, req *RefundQueryReq
 func RefundNotify(handler func(context.Context, *RefundQueryResponse) error, selector conf.MchConfigSelector, options *Options) http.Handler {
 
 	return HandleMchXML(func(ctx context.Context, x MchXML) error {
-		config := selector.SelectMch(x["appid"], x["mch_id"])
+		config, err := selector.SelectMch(x["appid"], x["mch_id"])
+		if err != nil {
+			return err
+		}
 		if config == nil {
 			return errors.New("Unknown app or mch")
 		}

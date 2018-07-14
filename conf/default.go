@@ -31,12 +31,12 @@ func (config *DefaultConfig) WechatMchKey() string {
 }
 
 // SelectMch 实现 MchConfigSelector 接口
-func (config *DefaultConfig) SelectMch(appID, mchID string) MchConfig {
+func (config *DefaultConfig) SelectMch(appID, mchID string) (MchConfig, error) {
 	if appID == "" || mchID == "" {
-		return nil
+		return nil, nil
 	}
 	if config.WechatAppID() == appID && config.WechatMchID() == mchID {
-		return config
+		return config, nil
 	}
-	return nil
+	return nil, nil
 }

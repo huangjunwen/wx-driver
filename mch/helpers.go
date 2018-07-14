@@ -254,7 +254,10 @@ func HandleSignedMchXML(handler func(context.Context, MchXML) error, selector co
 
 	return HandleMchXML(func(ctx context.Context, reqXML MchXML) error {
 		// 从 appid 和 mch_id 选择配置（多配置支持）
-		config := selector.SelectMch(reqXML["appid"], reqXML["mch_id"])
+		config, err := selector.SelectMch(reqXML["appid"], reqXML["mch_id"])
+		if err != nil {
+			return err
+		}
 		if config == nil {
 			return errors.New("Unknown app or mch")
 		}

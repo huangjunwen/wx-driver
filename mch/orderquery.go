@@ -158,11 +158,15 @@ func OrderQuery(ctx context.Context, config conf.MchConfig, req *OrderQueryReque
 func OrderNotify(handler func(context.Context, *OrderQueryResponse) error, selector conf.MchConfigSelector, options *Options) http.Handler {
 
 	return HandleSignedMchXML(func(ctx context.Context, x MchXML) error {
+		config, err := selector.SelectMch(x["appid"], x["mch_id"])
+		if err != nil {
+			return err
+		}
 		// 这里再次发起查询有以下原因
 		// 1. 回调所带的参数虽然与查询接口返回的几乎一致，但依据文档显示回调里好像没有包含 trade_state，
 		//    再次发起查询能与主动查询保持一致
 		// 2. 回调虽然带有签名，但万一 key 泄漏则任何人都可以伪造；主动发起查询则能多一层防护
-		resp, err := orderQuery(ctx, selector.SelectMch(x["appid"], x["mch_id"]), &OrderQueryRequest{
+		resp, err := orderQuery(ctx, config, &OrderQueryRequest{
 			TransactionID: x["transaction_id"],
 			OutTradeNo:    x["out_trade_no"],
 		}, options)

@@ -15,5 +15,5 @@ type MchConfig interface {
 // MchConfigSelector 用于选择微信支付配置
 type MchConfigSelector interface {
 	// SelectMch 通过 appID 和 mchID 查找对应配置，若找不到应该返回 nil
-	SelectMch(appID, mchID string) MchConfig
+	SelectMch(appID, mchID string) (MchConfig, error)
 }
