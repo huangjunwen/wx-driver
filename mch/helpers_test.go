@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"context"
 	"encoding/xml"
-	"github.com/huangjunwen/wxdriver/conf"
-	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/huangjunwen/wxdriver/conf"
+	"github.com/stretchr/testify/assert"
 )
 
 type TestClient []byte
@@ -28,10 +29,10 @@ func (c TestClient) Do(req *http.Request) (*http.Response, error) {
 
 var (
 	// 微信支付安全规范 (https://pay.weixin.qq.com/wiki/doc/api/danpin.php?chapter=4_3) 上的测试用例
-	config = conf.DefaultConfig{
-		conf.WechatAppIDName:  "wxd930ea5d5a258f4f",
-		conf.WechatMchIDName:  "10000100",
-		conf.WechatMchKeyName: "192006250b4c09247ec02edce69f6a2d",
+	config = &conf.DefaultConfig{
+		AppID:  "wxd930ea5d5a258f4f",
+		MchID:  "10000100",
+		MchKey: "192006250b4c09247ec02edce69f6a2d",
 	}
 )
 

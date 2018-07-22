@@ -12,11 +12,12 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"github.com/huangjunwen/wxdriver/conf"
-	"github.com/huangjunwen/wxdriver/utils"
 	"hash"
 	"net/http"
 	"sort"
+
+	"github.com/huangjunwen/wxdriver/conf"
+	"github.com/huangjunwen/wxdriver/utils"
 )
 
 // SignMchXML 对 MchXML 进行签名，签名算法见微信支付《安全规范》，signType 为空时默认使用 MD5，

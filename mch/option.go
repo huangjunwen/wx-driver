@@ -1,9 +1,10 @@
 package mch
 
 import (
-	"github.com/huangjunwen/wxdriver/utils"
 	"net/http"
 	"net/url"
+
+	"github.com/huangjunwen/wxdriver/utils"
 )
 
 var (

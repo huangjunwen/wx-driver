@@ -4,9 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/huangjunwen/wxdriver/conf"
 	"net/http"
 	"time"
+
+	"github.com/huangjunwen/wxdriver/conf"
 )
 
 var (

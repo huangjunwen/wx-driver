@@ -5,17 +5,25 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/hex"
+	"time"
 )
 
-// NonceStr 生成一个长度为 2*n 的随机字符串
-func NonceStr(n int) string {
-	buf := make([]byte, n)
-	_, err := rand.Read(buf)
-	if err != nil {
-		panic(err)
+var (
+	// NonceStr 生成一个长度为 2*n 的随机字符串，可 mock
+	NonceStr = func(n int) string {
+		buf := make([]byte, n)
+		_, err := rand.Read(buf)
+		if err != nil {
+			panic(err)
+		}
+		return hex.EncodeToString(buf)
 	}
-	return hex.EncodeToString(buf)
-}
+)
+
+var (
+	// Now 返回当前时间，可 mock
+	Now = time.Now
+)
 
 // TLSConfig 根据 cert/key 以及（可选的）ca 创建一个 tls.Config，例如可用于配置 https:
 //

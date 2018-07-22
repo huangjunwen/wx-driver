@@ -2,8 +2,9 @@ package mch
 
 import (
 	"encoding/xml"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMchXMLUnmarshalXML(t *testing.T) {
@@ -25,13 +26,13 @@ func TestMchXMLUnmarshalXML(t *testing.T) {
 		err := xml.Unmarshal([]byte(testCase.Src), &x)
 
 		if testCase.ExpectOK {
-			assert.NoErrorf(err, "Expect has no error")
+			assert.NoError(err)
 		} else {
-			assert.Errorf(err, "Expect has error")
+			assert.Error(err)
 		}
 
 		if testCase.ExpectResult != nil {
-			assert.Equalf(testCase.ExpectResult, map[string]string(x), "Result is not expect")
+			assert.Equal(testCase.ExpectResult, map[string]string(x))
 		}
 
 	}

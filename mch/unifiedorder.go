@@ -3,8 +3,9 @@ package mch
 import (
 	"context"
 	"errors"
-	"github.com/huangjunwen/wxdriver/conf"
 	"time"
+
+	"github.com/huangjunwen/wxdriver/conf"
 )
 
 var (
