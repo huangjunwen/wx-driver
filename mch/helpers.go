@@ -20,6 +20,26 @@ import (
 	"github.com/huangjunwen/wxdriver/utils"
 )
 
+// MchBusinessError 是微信支付业务错误
+type MchBusinessError struct {
+	// ResultCode 业务结果 SUCCESS/FAIL
+	ResultCode string
+	// ErrCode 错误代码, 当 ResultCode 为FAIL时返回错误代码
+	ErrCode string
+	// ErrCodeDes 错误代码描述
+	ErrCodeDes string
+}
+
+// Error 满足 error 接口
+func (err *MchBusinessError) Error() string {
+	return fmt.Sprintf(
+		"MchBusinessError(result_code=%s err_code=%s err_code_des=%s)",
+		err.ResultCode,
+		err.ErrCode,
+		err.ErrCodeDes,
+	)
+}
+
 // SignMchXML 对 MchXML 进行签名，签名算法见微信支付《安全规范》，signType 为空时默认使用 MD5，
 // x 中 sign 字段和空值字段皆不参与签名；返回的签名字符串为大写
 //
@@ -197,7 +217,11 @@ func PostMchXML(ctx context.Context, config conf.MchConfig, path string, reqXML 
 
 	// 检查业务标识 result_code
 	if respXML["result_code"] != "SUCCESS" {
-		return nil, fmt.Errorf("Response result_code=%+q err_code=%+q err_code_des=%+q", respXML["result_code"], respXML["err_code"], respXML["err_code_des"])
+		return nil, &MchBusinessError{
+			ResultCode: respXML["result_code"],
+			ErrCode:    respXML["err_code"],
+			ErrCodeDes: respXML["err_code_des"],
+		}
 	}
 
 	// 全部通过
