@@ -82,7 +82,7 @@ func init() {
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
-	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file (default is $HOME/.wxdrv.yaml)")
+	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file (default is ./wxdrv.yaml | $HOME/wxdrv.yaml)")
 
 	// 一些全局选项
 	rootCmd.PersistentFlags().StringP("appid", "a", "", "Wechat app id [required|configurable]")
@@ -113,9 +113,9 @@ func initConfig() {
 			os.Exit(1)
 		}
 
-		// Search config in home directory with name ".wxdrv" (without extension).
+		viper.AddConfigPath(".")
 		viper.AddConfigPath(home)
-		viper.SetConfigName(".wxdrv")
+		viper.SetConfigName("wxdrv")
 	}
 
 	viper.AutomaticEnv() // read in environment variables that match

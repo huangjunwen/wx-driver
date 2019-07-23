@@ -24,6 +24,7 @@ import (
 	"context"
 	"errors"
 	"log"
+
 	//"github.com/davecgh/go-spew/spew"
 	"github.com/huangjunwen/wxdriver/conf"
 	"github.com/huangjunwen/wxdriver/mch"
@@ -75,6 +76,32 @@ One of "transaction_id"/"out_trade_no" is required
 )
 
 var (
+	refundRequest = &mch.RefundRequest{}
+	refundCmd     = &cobra.Command{
+		Use:   "refund",
+		Short: "Refund order",
+		Long: `
+Refund order API: https://api.mch.weixin.qq.com/secapi/pay/refund
+
+One of "out_trade_no"/"out_refund_no"/"total_fee"/"refund_fee" is required
+		`,
+		Run: func(cmd *cobra.Command, args []string) {
+			resp, err := mch.Refund(
+				context.Background(),
+				mchConfig,
+				refundRequest,
+			)
+			if err != nil {
+				log.Fatal(err)
+			}
+			dumpJSON(map[string]interface{}{
+				"raw": resp.MchXML,
+			})
+		},
+	}
+)
+
+var (
 	refundQueryRequest = &mch.RefundQueryRequest{}
 	refundQueryCmd     = &cobra.Command{
 		Use:   "refundquery",
@@ -96,6 +123,26 @@ One of "transaction_id"/"out_trade_no"/"refund_id"/"out_refund_no" is required
 	}
 )
 
+var (
+	closeOrderRequest = &mch.CloseOrderRequest{}
+	closeOrderCmd     = &cobra.Command{
+		Use:   "closeorder",
+		Short: "Close order",
+		Long: `
+Close order API: https://api.mch.weixin.qq.com/pay/closeorder
+
+"out_trade_no" is required
+		`,
+		Run: func(cmd *cobra.Command, args []string) {
+			err := mch.CloseOrder(context.Background(), mchConfig, closeOrderRequest)
+			if err != nil {
+				log.Fatal(err)
+			}
+			log.Print("close order ok")
+		},
+	}
+)
+
 func init() {
 	// ----- mchCmd -----
 	rootCmd.AddCommand(mchCmd)
@@ -111,6 +158,13 @@ func init() {
 	orderQueryCmd.Flags().StringVar(&orderQueryRequest.TransactionID, "transaction_id", "", "Wechat payment transaction_id")
 	orderQueryCmd.Flags().StringVar(&orderQueryRequest.OutTradeNo, "out_trade_no", "", "Wechat payment out_trade_no")
 
+	// ----- refundCmd -----
+	mchCmd.AddCommand(refundCmd)
+	refundCmd.Flags().StringVar(&refundRequest.OutTradeNo, "out_trade_no", "", "Wechat payment out_trade_no")
+	refundCmd.Flags().StringVar(&refundRequest.OutRefundNo, "out_refund_no", "", "Wechat payment out_refund_no")
+	refundCmd.Flags().Uint64Var(&refundRequest.TotalFee, "total_fee", 0, "Wechat payment total_fee")
+	refundCmd.Flags().Uint64Var(&refundRequest.RefundFee, "refund_fee", 0, "Wechat payment refund_fee")
+
 	// ----- refundQueryCmd -----
 	mchCmd.AddCommand(refundQueryCmd)
 	refundQueryCmd.Flags().StringVar(&refundQueryRequest.TransactionID, "transaction_id", "", "Wechat payment transaction_id")
@@ -118,6 +172,11 @@ func init() {
 	refundQueryCmd.Flags().StringVar(&refundQueryRequest.RefundID, "refund_id", "", "Wechat payment refund_id")
 	refundQueryCmd.Flags().StringVar(&refundQueryRequest.OutRefundNo, "out_refund_no", "", "Wechat payment out_refund_no")
 	refundQueryCmd.Flags().UintVar(&refundQueryRequest.Offset, "offset", 0, "Offset of refund orders")
+
+	// ----- closeOrderCmd -----
+	mchCmd.AddCommand(closeOrderCmd)
+	closeOrderCmd.Flags().StringVar(&closeOrderRequest.OutTradeNo, "out_trade_no", "", "Wechat payment out_trade_no")
+
 }
 
 func initMchConfig() error {
@@ -133,6 +192,7 @@ func initMchConfig() error {
 	if mchKey == "" {
 		return errors.New("'mch_key' is required but not found")
 	}
+
 	mchConfig = &conf.DefaultConfig{
 		AppID:  appID,
 		MchID:  mchID,
