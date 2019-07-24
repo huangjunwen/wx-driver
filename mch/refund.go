@@ -38,7 +38,7 @@ type RefundRequest struct {
 	// ----- 选填字段 -----
 	RefundFeeType string // refund_fee_type String(8) 退款币种，必须与标价金额一致
 	RefundDesc    string // refund_desc String(80) 退款原因
-
+	NotifyUrl     string // notify_url String(256) 异步接收微信支付退款结果通知的回调地址
 }
 
 // RefundRequest 为申请退款接口响应
@@ -100,6 +100,16 @@ func Refund(ctx context.Context, config conf.MchConfig, req *RefundRequest, opts
 		reqXML.fillUint64(req.RefundFee, "refund_fee")
 	} else {
 		return nil, ErrRefundMissingRefundFee
+	}
+
+	if req.RefundFeeType != "" {
+		reqXML.fillString(req.RefundFeeType, "refund_fee_type")
+	}
+	if req.RefundDesc != "" {
+		reqXML.fillString(req.RefundDesc, "refund_desc")
+	}
+	if req.NotifyUrl != "" {
+		reqXML.fillString(req.NotifyUrl, "notify_url")
 	}
 
 	// reqXML -> respXML
