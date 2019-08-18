@@ -7,6 +7,13 @@ import (
 	"time"
 )
 
+var (
+	timeCompactLayout = "20060102150405"
+	// 微信支付所有的时间都是东八区(China Standard Time)
+	// https://pay.weixin.qq.com/wiki/doc/api/jsapi.php?chapter=4_2
+	cstTimeZone = time.FixedZone("UTC+8", 8*60*60)
+)
+
 // MchXML 代表微信支付接口的 xml 数据，形如：
 //
 //   <xml>
@@ -110,12 +117,12 @@ func (x MchXML) extractTime(target *time.Time, fieldName string, layout string, 
 		return
 	}
 	if fieldValue := x[fieldName]; fieldValue != "" {
-		*target, *err = time.Parse(layout, fieldValue)
+		*target, *err = time.ParseInLocation(layout, fieldValue, cstTimeZone)
 	}
 }
 
 func (x MchXML) extractTimeCompact(target *time.Time, fieldName string, err *error) {
-	x.extractTime(target, fieldName, "20060102150405", err)
+	x.extractTime(target, fieldName, timeCompactLayout, err)
 }
 
 func (x MchXML) extractUint64(target *uint64, fieldName string, err *error) {
@@ -189,11 +196,11 @@ func (x MchXML) fillString(src string, fieldName string) {
 }
 
 func (x MchXML) fillTime(src time.Time, fieldName string, layout string) {
-	x[fieldName] = src.Format(layout)
+	x[fieldName] = src.In(cstTimeZone).Format(layout)
 }
 
 func (x MchXML) fillTimeCompact(src time.Time, fieldName string) {
-	x.fillTime(src, fieldName, "20060102150405")
+	x.fillTime(src, fieldName, timeCompactLayout)
 }
 
 func (x MchXML) fillUint64(src uint64, fieldName string) {
