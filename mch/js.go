@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/huangjunwen/wxdriver/conf"
-	"github.com/huangjunwen/wxdriver/utils"
+	"github.com/huangjunwen/wx-driver/conf"
+	"github.com/huangjunwen/wx-driver/utils"
 )
 
 // JSReqEx 返回拉起微信支付所需的 JS 参数（公众号支付/小程序支付），signType 必须保持和统一下单一致，

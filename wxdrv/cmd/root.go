@@ -31,7 +31,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/huangjunwen/wxdriver/utils"
+	"github.com/huangjunwen/wx-driver/utils"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"

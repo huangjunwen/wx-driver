@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/huangjunwen/wxdriver/conf"
+	"github.com/huangjunwen/wx-driver/conf"
 )
 
 var (

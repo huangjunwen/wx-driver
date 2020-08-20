@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/huangjunwen/wxdriver/conf"
-	"github.com/huangjunwen/wxdriver/utils"
+	"github.com/huangjunwen/wx-driver/conf"
+	"github.com/huangjunwen/wx-driver/utils"
 	"github.com/stretchr/testify/assert"
 )
 

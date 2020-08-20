@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/huangjunwen/wxdriver/conf"
+	"github.com/huangjunwen/wx-driver/conf"
 )
 
 var (

@@ -20,7 +20,7 @@
 
 package main
 
-import "github.com/huangjunwen/wxdriver/wxdrv/cmd"
+import "github.com/huangjunwen/wx-driver/wxdrv/cmd"
 
 func main() {
 	cmd.Execute()

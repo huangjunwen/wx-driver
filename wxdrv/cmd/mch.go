@@ -26,8 +26,8 @@ import (
 	"log"
 
 	//"github.com/davecgh/go-spew/spew"
-	"github.com/huangjunwen/wxdriver/conf"
-	"github.com/huangjunwen/wxdriver/mch"
+	"github.com/huangjunwen/wx-driver/conf"
+	"github.com/huangjunwen/wx-driver/mch"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )

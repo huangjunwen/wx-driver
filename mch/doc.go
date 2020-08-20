@@ -21,8 +21,8 @@
 // 中统一使用带客户端证书的 http client：
 //
 //  import (
-//  	"github.com/huangjunwen/wxdriver/mch"
-//  	"github.com/huangjunwen/wxdriver/utils"
+//  	"github.com/huangjunwen/wx-driver/mch"
+//  	"github.com/huangjunwen/wx-driver/utils"
 //  	"time"
 //  )
 //

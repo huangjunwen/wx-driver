@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/huangjunwen/wxdriver/utils"
+	"github.com/huangjunwen/wx-driver/utils"
 )
 
 var (

@@ -1,4 +1,4 @@
-module github.com/huangjunwen/wxdriver
+module github.com/huangjunwen/wx-driver
 
 go 1.12
 

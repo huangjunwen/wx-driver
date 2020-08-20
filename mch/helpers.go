@@ -16,8 +16,8 @@ import (
 	"net/http"
 	"sort"
 
-	"github.com/huangjunwen/wxdriver/conf"
-	"github.com/huangjunwen/wxdriver/utils"
+	"github.com/huangjunwen/wx-driver/conf"
+	"github.com/huangjunwen/wx-driver/utils"
 )
 
 // MchBusinessError 是微信支付业务错误

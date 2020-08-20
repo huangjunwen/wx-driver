@@ -9,7 +9,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/huangjunwen/wxdriver/conf"
+	"github.com/huangjunwen/wx-driver/conf"
 	"github.com/stretchr/testify/assert"
 )
 
